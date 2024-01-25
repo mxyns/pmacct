@@ -192,7 +192,7 @@ void bmp_process_msg_init(struct bmp_peer *bmpp, ParsedBmp *parsed_bmp) {
   if (!tlvs) return;
 
   BmpMessageValueOpaque *msg = parsed_bmp->message;
-  BmpInitTlvResult tlv_result = netgauze_bmp_init_get_tlvs(msg);
+  BmpTlvListResult tlv_result = netgauze_bmp_get_tlvs(msg);
   if (tlv_result.tag == Err_CSlice_bmp_log_tlv_____BmpParseError) {
     return;
   }
@@ -223,8 +223,6 @@ void bmp_process_msg_init(struct bmp_peer *bmpp, ParsedBmp *parsed_bmp) {
       exit_gracefully(1);
     }
   }
-
-  CSlice_free_bmp_log_tlv(tlv_slice);
 
   /* Init message does not contain a timestamp */
   gettimeofday(&bdata.tstamp_arrival, NULL);
