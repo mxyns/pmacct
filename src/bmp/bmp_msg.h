@@ -31,12 +31,12 @@
 /* prototypes */
 extern u_int32_t bmp_process_packet(char *, u_int32_t, struct bmp_peer *, int *);
 extern void bmp_process_msg_init(struct bmp_peer *, ParsedBmp *);
-extern void bmp_process_msg_term(char **, u_int32_t *, struct bmp_peer *, const ParsedBmp *);
-extern void bmp_process_msg_peer_up(char **, u_int32_t *, struct bmp_peer *, const ParsedBmp *);
-extern void bmp_process_msg_peer_down(char **, u_int32_t *, struct bmp_peer *, const ParsedBmp *);
-extern void bmp_process_msg_stats(char **, u_int32_t *, struct bmp_peer *, const ParsedBmp *);
-extern void bmp_process_msg_route_monitor(char **, u_int32_t *, struct bmp_peer *, const ParsedBmp *);
-extern void bmp_process_msg_route_mirror(char **, u_int32_t *, struct bmp_peer *);
+extern void bmp_process_msg_term(struct bmp_peer *, const ParsedBmp *);
+extern void bmp_process_msg_peer_up(struct bmp_peer *, const ParsedBmp *);
+extern void bmp_process_msg_peer_down(struct bmp_peer *, const ParsedBmp *);
+extern void bmp_process_msg_stats(struct bmp_peer *, const ParsedBmp *);
+extern void bmp_process_msg_route_monitor(struct bmp_peer *, const ParsedBmp *);
+extern void bmp_process_msg_route_mirror(struct bmp_peer *);
 
 extern Opaque_BmpParsingContext *bmp_parsing_context_get(struct bmp_peer *bmp_peer);
 extern Opaque_ContextCache *bmp_context_cache_get();
