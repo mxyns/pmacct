@@ -150,7 +150,9 @@ u_int32_t bmp_process_packet(char *bmp_packet, u_int32_t len, struct bmp_peer *b
     }
 
     netgauze_bmp_parse_result_free(parse_result);
+    vsd_find_sites(bmpp, bgp_select_routing_db(FUNC_TYPE_BMP)->rib[AFI_IP][SAFI_UNICAST]);
   }
+
   return FALSE;
 }
 
