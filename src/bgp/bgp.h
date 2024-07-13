@@ -425,4 +425,12 @@ extern bgp_tag_t bgp_logdump_tag;
 extern struct sockaddr_storage bgp_logdump_tag_peer;
 
 extern struct bgp_xconnects bgp_xcs_map;
-#endif 
+#endif
+
+#ifndef PMACCT_GAUZE_BUILD
+#include "bmp/bmp.h"
+#include "pmacct_gauze_lib/pmacct_gauze_lib.h"
+extern Opaque_BgpContextCache *bgp_context_cache_get();
+extern Opaque_BgpParsingContext *bgp_parsing_context_get(struct bgp_peer *bgp_peer);
+extern void bgp_parsing_context_clear(struct bgp_peer *bgp_peer);
+#endif

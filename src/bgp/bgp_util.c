@@ -769,6 +769,8 @@ void bgp_peer_close(struct bgp_peer *peer, int type, int no_quiet, int send_noti
   memset(&peer->addr, 0, sizeof(peer->addr));
   memset(&peer->addr_str, 0, sizeof(peer->addr_str));
 
+  netgauze_bgp_context_cache_delete(bgp_context_cache_get(), peer);
+
   free(peer->buf.base);
   if (config.bgp_xconnect_map) {
     free(peer->xbuf.base);

@@ -43,6 +43,33 @@
 #endif
 #include "bgp_lg.h"
 
+
+// Include "bmp/bmp.h" is needed for pmacct_gauze_lib.h types to be fully defined...
+
+#ifndef PMACCT_GAUZE_BUILD
+static Opaque_BgpContextCache *bgp_context_cache = NULL;
+
+extern Opaque_BgpContextCache *bgp_context_cache_get() {
+  if (!bgp_context_cache)
+    bgp_context_cache = netgauze_make_Opaque_BgpContextCache();
+
+  return bgp_context_cache;
+}
+
+Opaque_BgpParsingContext *bgp_parsing_context_get(struct bgp_peer *bgp_peer) {
+  Opaque_BgpContextCache *context_cache = bgp_context_cache_get();
+  Opaque_BgpParsingContext *ctx = netgauze_bgp_context_cache_get(context_cache, bgp_peer);
+  if (ctx) return ctx;
+
+  return netgauze_bgp_context_cache_set(context_cache, bgp_peer, netgauze_make_Opaque_BgpParsingContext());
+}
+
+void bgp_parsing_context_clear(struct bgp_peer *bgp_peer) {
+  if (bgp_context_cache)
+    netgauze_bgp_context_cache_delete(bgp_context_cache, bgp_peer);
+}
+#endif
+
 /* Global variables */
 thread_pool_t *bgp_pool;
 struct bgp_peer *peers;
@@ -1113,6 +1140,7 @@ void skinny_bgp_daemon_online()
 
 	ret = bgp_parse_msg(peer, now, TRUE);
 	if (ret) {
+      Log(LOG_INFO, "ret=%d\n",ret);
 	  FD_CLR(recv_fd, &bkp_read_descs);
 
 	  if (ret < 0) bgp_peer_close(peer, FUNC_TYPE_BGP, FALSE, FALSE, FALSE, FALSE, NULL);

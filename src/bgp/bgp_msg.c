@@ -24,12 +24,12 @@
 #include "bgp.h"
 #include "bgp_blackhole.h"
 
+
 int bgp_parse_msg(struct bgp_peer *peer, time_t now, int online) {
   struct bgp_misc_structs *bms;
   struct bgp_msg_data bmd;
   char *bgp_packet_ptr;
   char bgp_peer_str[INET6_ADDRSTRLEN];
-  struct bgp_header *bhdr;
   int ret, bgp_len = 0;
 
   if (!peer || !peer->buf.base) return ERR;
@@ -42,36 +42,29 @@ int bgp_parse_msg(struct bgp_peer *peer, time_t now, int online) {
   bmd.peer = peer;
 
   for (bgp_packet_ptr = peer->buf.base; peer->msglen > 0; peer->msglen -= bgp_len, bgp_packet_ptr += bgp_len) {
-    bhdr = (struct bgp_header *) bgp_packet_ptr;
+    BgpParseResult parse_result = netgauze_bgp_parse_packet_with_context(bgp_packet_ptr, peer->msglen, bgp_parsing_context_get(peer));
 
-    if (peer->msglen < BGP_HEADER_SIZE && bgp_packet_ptr == peer->buf.base) {
-      bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
-      Log(LOG_INFO, "INFO ( %s/%s ): [%s] Received malformed BGP packet (incomplete header).\n",
-          config.name, bms->log_str, bgp_peer_str);
-      return BGP_NOTIFY_HEADER_ERR;
+    int err = ERR;
+    if (parse_result.tag == CResult_Err) {
+      Log(LOG_INFO, "netgauze parse error: %s\n", netgauze_bgp_parse_error_str(parse_result.err));
+      if (parse_result.err.tag == BgpParseError_NetgauzeBgpError) {
+        err = parse_result.err.netgauze_bgp_error.pmacct_error_code;
+      }
+      goto end_with_error;
     }
 
-    bgp_len = ntohs(bhdr->bgpo_len);
+    ParsedBgp *parsed_bgp = &parse_result.ok;
 
-    if (bgp_max_msglen_check(bgp_len) == ERR) {
-      bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
-      Log(LOG_INFO, "INFO ( %s/%s ): [%s] Received malformed BGP packet (packet length check failed).\n",
-          config.name, bms->log_str, bgp_peer_str);
-      return BGP_NOTIFY_HEADER_ERR;
-    }
-
-    if (bgp_marker_check(bhdr, BGP_MARKER_SIZE) == ERR) {
-      bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
-      Log(LOG_INFO, "INFO ( %s/%s ): [%s] Received malformed BGP packet (marker check failed).\n",
-          config.name, bms->log_str, bgp_peer_str);
-      return BGP_NOTIFY_HEADER_ERR;
-    }
+    struct bgp_header* bhdr = &parsed_bgp->header;
+    bgp_len = bhdr->bgpo_len;
 
     switch (bhdr->bgpo_type) {
       case BGP_OPEN:
         ret = bgp_parse_open_msg(&bmd, bgp_packet_ptr, now, online);
-        if (ret < 0) return BGP_NOTIFY_OPEN_ERR;
-
+        if (ret < 0) {
+          err = BGP_NOTIFY_OPEN_ERR;
+          goto end_with_error;
+        }
         break;
       case BGP_NOTIFICATION: {
         u_int16_t shutdown_msglen = (BGP_NOTIFY_CEASE_SM_LEN + 1);
@@ -85,14 +78,14 @@ int bgp_parse_msg(struct bgp_peer *peer, time_t now, int online) {
         Log(LOG_INFO, "INFO ( %s/%s ): [%s] BGP_NOTIFICATION received (%u, %u). Shutdown Message: '%s'\n",
             config.name, bms->log_str, bgp_peer_str, res_maj, res_min, shutdown_msg);
 
-        return ERR;
+        err = ERR;
+        goto end_with_error;
       }
       case BGP_KEEPALIVE:
         bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
         Log(LOG_DEBUG, "DEBUG ( %s/%s ): [%s] BGP_KEEPALIVE received\n", config.name, bms->log_str, bgp_peer_str);
         if (peer->status >= OpenSent) {
           if (peer->status < Established) peer->status = Established;
-
           if (online) {
             char bgp_reply_pkt[BGP_BUFFER_SIZE], *bgp_reply_pkt_ptr;
 
@@ -114,14 +107,16 @@ int bgp_parse_msg(struct bgp_peer *peer, time_t now, int online) {
           bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
           Log(LOG_DEBUG, "DEBUG ( %s/%s ): [%s] BGP UPDATE received (no neighbor). Discarding.\n",
               config.name, bms->log_str, bgp_peer_str);
-          return BGP_NOTIFY_FSM_ERR;
+          err = BGP_NOTIFY_FSM_ERR;
+          goto end_with_error;
         }
 
         ret = bgp_parse_update_msg(&bmd, bgp_packet_ptr);
         if (ret < 0) {
           bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
           Log(LOG_WARNING, "WARN ( %s/%s ): [%s] BGP UPDATE: malformed.\n", config.name, bms->log_str, bgp_peer_str);
-          return BGP_NOTIFY_UPDATE_ERR;
+          err = BGP_NOTIFY_UPDATE_ERR;
+          goto end_with_error;
         }
 
         break;
@@ -132,7 +127,10 @@ int bgp_parse_msg(struct bgp_peer *peer, time_t now, int online) {
         bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
         Log(LOG_INFO, "INFO ( %s/%s ): [%s] Received malformed BGP packet (unsupported message type).\n",
             config.name, bms->log_str, bgp_peer_str);
-        return BGP_NOTIFY_HEADER_ERR;
+        err = BGP_NOTIFY_HEADER_ERR;
+        end_with_error:
+          netgauze_bgp_parse_result_free(parse_result);
+          return err;
     }
   }
 
