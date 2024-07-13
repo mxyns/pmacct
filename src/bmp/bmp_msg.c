@@ -33,26 +33,26 @@
 #endif
 
 #ifndef PMACCT_GAUZE_BUILD
-static Opaque_ContextCache *bmp_context_cache = NULL;
+static Opaque_BmpContextCache *bmp_context_cache = NULL;
 
-extern Opaque_ContextCache *bmp_context_cache_get() {
+extern Opaque_BmpContextCache *bmp_context_cache_get() {
   if (!bmp_context_cache)
-    bmp_context_cache = netgauze_make_Opaque_ContextCache();
+    bmp_context_cache = netgauze_make_Opaque_BmpContextCache();
 
   return bmp_context_cache;
 }
 
 Opaque_BmpParsingContext *bmp_parsing_context_get(struct bmp_peer *bmp_peer) {
-  Opaque_ContextCache *context_cache = bmp_context_cache_get();
-  Opaque_BmpParsingContext *ctx = netgauze_context_cache_get(context_cache, bmp_peer);
+  Opaque_BmpContextCache *context_cache = bmp_context_cache_get();
+  Opaque_BmpParsingContext *ctx = netgauze_bmp_context_cache_get(context_cache, bmp_peer);
   if (ctx) return ctx;
 
-  return netgauze_context_cache_set(context_cache, bmp_peer, netgauze_make_Opaque_BmpParsingContext());
+  return netgauze_bmp_context_cache_set(context_cache, bmp_peer, netgauze_make_Opaque_BmpParsingContext());
 }
 
 void bmp_parsing_context_clear(struct bmp_peer *bmp_peer) {
   if (bmp_context_cache)
-    netgauze_context_cache_delete(bmp_context_cache, bmp_peer);
+    netgauze_bmp_context_cache_delete(bmp_context_cache, bmp_peer);
 }
 #endif
 
@@ -79,8 +79,8 @@ u_int32_t bmp_process_packet(char *bmp_packet, u_int32_t len, struct bmp_peer *b
 
     if (parse_result.tag == CResult_Err) {
       Log(LOG_INFO, "INFO ( %s/%s ): [%s] packet discarded: %s\n", config.name, bms->log_str, peer->addr_str,
-          bmp_parse_error_str(parse_result.err));
-      bmp_parse_result_free(parse_result);
+          netgauze_bmp_parse_error_str(parse_result.err));
+      netgauze_bmp_parse_result_free(parse_result);
       return msg_start_len;
     }
 
@@ -130,7 +130,7 @@ u_int32_t bmp_process_packet(char *bmp_packet, u_int32_t len, struct bmp_peer *b
     /* move forward to next bmp message in the packet */
     bmp_jump_offset(&bmp_packet_ptr, &pkt_remaining_len, parsed_bmp.read_bytes);
 
-    bmp_parse_result_free(parse_result);
+    netgauze_bmp_parse_result_free(parse_result);
   }
   return FALSE;
 }
