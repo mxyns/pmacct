@@ -39,7 +39,7 @@ extern void bmp_process_msg_route_monitor(struct bmp_peer *, const ParsedBmp *);
 extern void bmp_process_msg_route_mirror(struct bmp_peer *);
 
 extern Opaque_BmpParsingContext *bmp_parsing_context_get(struct bmp_peer *bmp_peer);
-extern Opaque_ContextCache *bmp_context_cache_get();
+extern Opaque_BmpContextCache *bmp_context_cache_get();
 extern void bmp_parsing_context_clear(struct bmp_peer *bmp_peer);
 #endif
 
