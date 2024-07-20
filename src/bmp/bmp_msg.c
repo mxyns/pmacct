@@ -678,44 +678,7 @@ void bmp_process_msg_route_monitor(char **bmp_packet, u_int32_t *len, struct bmp
   BgpUpdateResult bgp_result = netgauze_bgp_update_get_updates(&bmpp->self, bmp_rm_upd_res.ok);
   assert(bgp_result.tag == CResult_Ok); // assert because we know by contract that the msg gotten from the bmp_rm is a bgp_upd
 
-  ParsedBgpUpdate bgp_parsed = bgp_result.ok;
-
-  ProcessPacket *pkt = NULL;
-  for (int i = 0; i < bgp_parsed.packets.len; i += 1) {
-    pkt = &bgp_parsed.packets.base_ptr[i];
-
-    switch (pkt->update_type) {
-      case BGP_NLRI_UPDATE:
-        bgp_process_update(&bmd, &pkt->prefix, &pkt->attr, &pkt->attr_extra, pkt->afi, pkt->safi, i);
-        break;
-      case BGP_NLRI_WITHDRAW:
-        bgp_process_withdraw(&bmd, &pkt->prefix, &pkt->attr, &pkt->attr_extra, pkt->afi, pkt->safi, i);
-        break;
-      case BGP_NLRI_UNDEFINED: {
-        // this is EoR
-        struct bgp_info ri = { 0 };
-        ri.bmed = bmd.extra;
-        ri.peer = bmd.peer;
-        bgp_peer_log_msg(NULL, &ri, pkt->afi, pkt->safi, bms->tag, "log", bms->msglog_output, NULL, BGP_LOG_TYPE_EOR);
-        break;
-      }
-      default: {
-        Log(LOG_INFO,
-            "INFO ( %s/%s ): [%s] [route monitor] packet discarded: unknown update type received from pmacct-gauze\n",
-            config.name, bms->log_str, peer->addr_str);
-      }
-    }
-  }
-
-  // Unintern all temporary structures
-  if (pkt) {
-    if (pkt->attr.community) community_unintern(peer, pkt->attr.community);
-    if (pkt->attr.lcommunity) lcommunity_unintern(peer, pkt->attr.lcommunity);
-    if (pkt->attr.ecommunity) ecommunity_unintern(peer, pkt->attr.ecommunity);
-    if (pkt->attr.aspath) aspath_unintern(peer, pkt->attr.aspath);
-  }
-
-  CSlice_free_ProcessPacket(bgp_parsed.packets);
+  process_update_packets(&bmd, bms, peer, bgp_result.ok);
 
   bmp_get_and_check_length(bmp_packet, len, bgp_update_len);
 

@@ -33,6 +33,7 @@ extern int bgp_process_withdraw(struct bgp_msg_data *, struct prefix *, void *, 
 
 #ifndef PMACCT_GAUZE_BUILD
 #include "bgp.h"
+extern int process_update_packets(struct bgp_msg_data *, struct bgp_misc_structs *, struct bgp_peer *, ParsedBgpUpdate);
 extern int bgp_process_msg_update(struct bgp_msg_data *, const Opaque_BgpMessage *);
 extern int bgp_process_msg_notif(struct bgp_msg_data *, const Opaque_BgpMessage *);
 extern int bgp_process_msg_open(struct bgp_msg_data *, const Opaque_BgpMessage *, time_t, int);
