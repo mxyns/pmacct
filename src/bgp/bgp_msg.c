@@ -30,8 +30,7 @@ int bgp_parse_msg(struct bgp_peer *peer, time_t now, int online) {
   struct bgp_misc_structs *bms;
   struct bgp_msg_data bmd;
   char *bgp_packet_ptr;
-  char bgp_peer_str[INET6_ADDRSTRLEN];
-  int ret, bgp_len = 0;
+  int bgp_len;
 
   if (!peer || !peer->buf.base) return ERR;
 
@@ -41,8 +40,6 @@ int bgp_parse_msg(struct bgp_peer *peer, time_t now, int online) {
 
   memset(&bmd, 0, sizeof(bmd));
   bmd.peer = peer;
-
-  static int counter = 0;
 
   for (bgp_packet_ptr = peer->buf.base; peer->msglen > 0; peer->msglen -= bgp_len, bgp_packet_ptr += bgp_len) {
     BgpParseResult parse_result = netgauze_bgp_parse_packet_with_context(bgp_packet_ptr, peer->msglen, bgp_parsing_context_get(peer));
@@ -63,84 +60,29 @@ int bgp_parse_msg(struct bgp_peer *peer, time_t now, int online) {
 
     switch (bhdr->bgpo_type) {
       case BGP_OPEN:
-        ret = bgp_parse_open_msg(&bmd, parsed_bgp, now, online);
-        if (ret < 0) {
+        if (bgp_process_msg_open(&bmd, parsed_bgp->message, now, online) < 0)
           err = BGP_NOTIFY_OPEN_ERR;
-        }
         break;
       case BGP_NOTIFICATION: {
-        u_int16_t shutdown_msglen = (BGP_NOTIFY_CEASE_SM_LEN + 1);
-        u_int8_t res_maj = 0, res_min = 0;
-        char shutdown_msg[shutdown_msglen];
-
-        // TODO remove when we remove the buffer pointer juggling
-        bgp_parse_notification_msg(&bmd, bgp_packet_ptr, &res_maj, &res_min, shutdown_msg, shutdown_msglen);
-
-        BgpNotificationResult notif_result = netgauze_bgp_notification(parsed_bgp->message);
-        if (notif_result.tag == CResult_Err) {
-          Log(LOG_INFO, "netgauze could not process bgp notification correctly: bad msg type %d\n", notif_result.err._0);
-          return notif_result.err._0;
-        }
-        BgpNotification *notif = &notif_result.ok;
-        res_maj = notif->code;
-        res_min = notif->subcode;
-        shutdown_msglen = notif->value_len;
-        memcpy(shutdown_msg, notif->value, shutdown_msglen);
-        shutdown_msg[shutdown_msglen - 1] = 0; // ensure we have a zero-terminated string
-
-        bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
-        Log(LOG_INFO, "INFO ( %s/%s ): [%s] BGP_NOTIFICATION received (%u, %u). Shutdown Message: '%s'\n",
-            config.name, bms->log_str, bgp_peer_str, res_maj, res_min, shutdown_msg);
-
-        err = ERR;
+        err = bgp_process_msg_notif(&bmd, parsed_bgp->message);
+        break;
       }
       case BGP_KEEPALIVE:
-        bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
-        Log(LOG_DEBUG, "DEBUG ( %s/%s ): [%s] BGP_KEEPALIVE received\n", config.name, bms->log_str, bgp_peer_str);
-        if (peer->status >= OpenSent) {
-          if (peer->status < Established) peer->status = Established;
-          if (online) {
-            char bgp_reply_pkt[BGP_BUFFER_SIZE], *bgp_reply_pkt_ptr;
-
-            memset(bgp_reply_pkt, 0, BGP_BUFFER_SIZE);
-            bgp_reply_pkt_ptr = bgp_reply_pkt;
-            bgp_reply_pkt_ptr += bgp_write_keepalive_msg(bgp_reply_pkt_ptr);
-            ret = send(peer->fd, bgp_reply_pkt, bgp_reply_pkt_ptr - bgp_reply_pkt, 0);
-            peer->last_keepalive = now;
-
-            bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
-            Log(LOG_DEBUG, "DEBUG ( %s/%s ): [%s] BGP_KEEPALIVE sent\n", config.name, bms->log_str, bgp_peer_str);
-          }
-        }
-        /* If we didn't pass through a successful BGP OPEN exchange just yet
-           let's temporarily silently discard BGP KEEPALIVEs */
+        err = bgp_process_msg_keepalive(&bmd, parsed_bgp->message, now, online);
         break;
       case BGP_UPDATE:
-        if (peer->status < Established) {
-          bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
-          Log(LOG_DEBUG, "DEBUG ( %s/%s ): [%s] BGP UPDATE received (no neighbor). Discarding.\n",
-              config.name, bms->log_str, bgp_peer_str);
-          err = BGP_NOTIFY_FSM_ERR;
-          break;
-        }
-
-        ret = bgp_parse_update_msg(&bmd, parsed_bgp);
-
-        if (ret < 0) {
-          bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
-          Log(LOG_WARNING, "WARN ( %s/%s ): [%s] BGP UPDATE: error %d.\n", config.name, bms->log_str, bgp_peer_str, err);
-          err = BGP_NOTIFY_UPDATE_ERR;
-        }
-
+        err = bgp_process_msg_update(&bmd, parsed_bgp->message);
         break;
       case BGP_ROUTE_REFRESH:
         /* just ignore */
         break;
-      default:
+      default: {
+        char bgp_peer_str[INET6_ADDRSTRLEN];
         bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
         Log(LOG_INFO, "INFO ( %s/%s ): [%s] Received malformed BGP packet (unsupported message type).\n",
             config.name, bms->log_str, bgp_peer_str);
         err = BGP_NOTIFY_HEADER_ERR;
+      }
     }
 
     netgauze_bgp_parse_result_free(parse_result);
@@ -150,10 +92,9 @@ int bgp_parse_msg(struct bgp_peer *peer, time_t now, int online) {
   }
 
   return SUCCESS;
-
 }
 
-int bgp_parse_open_msg(struct bgp_msg_data *bmd, const ParsedBgp *bgp_msg, time_t now, int online) {
+int bgp_process_msg_open(struct bgp_msg_data *bmd, const Opaque_BgpMessage *bgp_msg, time_t now, int online) {
   struct bgp_peer *peer = bmd->peer;
   struct bgp_misc_structs *bms;
   if (!peer || !bgp_msg) return ERR;
@@ -162,7 +103,7 @@ int bgp_parse_open_msg(struct bgp_msg_data *bmd, const ParsedBgp *bgp_msg, time_
 
   if (!bms) return ERR;
 
-  BgpOpenProcessResult proc_res = netgauze_bgp_process_open(bgp_msg->message, peer, 5, online);
+  BgpOpenProcessResult proc_res = netgauze_bgp_process_open(bgp_msg, peer, 5, online);
   if (proc_res.tag == CResult_Err) {
     Log(LOG_INFO, "netgauze could not process bgp open for error code %d\n", proc_res.err.tag);
     return ERR;
@@ -183,7 +124,7 @@ int bgp_parse_open_msg(struct bgp_msg_data *bmd, const ParsedBgp *bgp_msg, time_
     if (!config.bgp_daemon_as) peer->myas = peer->as;
     else peer->myas = config.bgp_daemon_as;
 
-    bgp_reply_ptr += bgp_write_open_msg(bgp_reply_pkt, BGP_BUFFER_SIZE, peer, bgp_msg->message);
+    bgp_reply_ptr += bgp_write_open_msg(bgp_reply_pkt, BGP_BUFFER_SIZE, peer, bgp_msg);
     /* sticking a KEEPALIVE to it */
     bgp_reply_ptr += bgp_write_keepalive_msg(bgp_reply_ptr);
     peer->last_keepalive = now;
@@ -223,7 +164,7 @@ int bgp_write_keepalive_msg(char *msg) {
 
 /* write BGP OPEN msg */
 int bgp_write_open_msg(char *msg, int buff_len, struct bgp_peer *peer, const Opaque_BgpMessage *open_rx) {
-  char my_id_static[] = "1.2.3.4", *my_id = my_id_static;
+  char my_id_static[] = "1.2.3.4";
   struct host_addr my_id_addr, bgp_ip, bgp_id;
 
   if (config.bgp_daemon_ip) str_to_addr(config.bgp_daemon_ip, &bgp_ip);
@@ -236,25 +177,22 @@ int bgp_write_open_msg(char *msg, int buff_len, struct bgp_peer *peer, const Opa
   memset(&my_id_addr, 0, sizeof(my_id_addr));
 
   if (config.bgp_daemon_id && !is_any(&bgp_id) && !my_id_addr.family) {
-    my_id = config.bgp_daemon_id;
-    str_to_addr(my_id, &my_id_addr);
+    str_to_addr(config.bgp_daemon_id, &my_id_addr);
     if (my_id_addr.family != AF_INET) memset(&my_id_addr, 0, sizeof(my_id_addr));
   }
 
   /* set BGP router-ID trial #2 */
   if (config.bgp_daemon_ip && !is_any(&bgp_ip) && !my_id_addr.family) {
-    my_id = config.bgp_daemon_ip;
-    str_to_addr(my_id, &my_id_addr);
+    str_to_addr(config.bgp_daemon_ip, &my_id_addr);
     if (my_id_addr.family != AF_INET) memset(&my_id_addr, 0, sizeof(my_id_addr));
   }
 
   /* set BGP router-ID trial #3 */
   if (!my_id_addr.family) {
-    my_id = my_id_static;
-    str_to_addr(my_id, &my_id_addr);
+    str_to_addr(my_id_static, &my_id_addr);
   }
 
-  BgpOpenWriteResult write_result = netgauze_bgp_open_write_reply(peer, open_rx, msg, BGP_BUFFER_SIZE, my_id_addr.address.ipv4);
+  BgpOpenWriteResult write_result = netgauze_bgp_open_write_reply(peer, open_rx, msg, buff_len, my_id_addr.address.ipv4);
   if (write_result.tag == CResult_Err) {
     Log(LOG_INFO, "netgauze error while crafting bgp open reply %s\n", netgauze_bgp_open_write_result_err_str(write_result.err));
     netgauze_bgp_open_write_result_free(write_result);
@@ -307,70 +245,86 @@ int bgp_write_notification_msg(char *msg, int msglen, u_int8_t n_major, u_int8_t
   return ret;
 }
 
-int bgp_parse_notification_msg(struct bgp_msg_data *bmd, char *pkt, u_int8_t *res_maj, u_int8_t *res_min,
-                               char *shutdown_msg, u_int16_t shutdown_msglen) {
+/* process bgp messages */
+int bgp_process_msg_notif(struct bgp_msg_data *bmd, const Opaque_BgpMessage *bgp_msg) {
+
   struct bgp_peer *peer = bmd->peer;
-  struct bgp_notification *bn = (struct bgp_notification *) pkt;
-  struct bgp_notification_shutdown_msg *bnsm;
-  char *pkt_ptr = pkt;
-  u_int32_t rem_len;
-  int ret = 0;
+  struct bgp_misc_structs *bms = bgp_select_misc_db(peer->type);
 
-  if (!peer || !pkt || !shutdown_msg || peer->msglen < BGP_MIN_NOTIFICATION_MSG_SIZE) return ERR;
+  BgpNotificationResult notif_result = netgauze_bgp_notification(bgp_msg);
+  if (notif_result.tag == CResult_Err) {
+    Log(LOG_INFO, "netgauze could not process bgp notification correctly: bad msg type %d\n",
+        notif_result.err._0);
+    return notif_result.err._0;
+  }
 
-  rem_len = peer->msglen;
-  ret += BGP_MIN_NOTIFICATION_MSG_SIZE;
-  rem_len -= BGP_MIN_NOTIFICATION_MSG_SIZE;
-  (*res_maj) = bn->bgpn_major;
-  (*res_min) = bn->bgpn_minor;
+  // get shutdown message
+  BgpNotification *notif = &notif_result.ok;
+  char shutdown_msg[notif->value_len + 1];
+  memcpy(shutdown_msg, notif->value, notif->value_len);
+  shutdown_msg[notif->value_len] = 0; // ensure we have a zero-terminated string
 
-  /* rfc8203 */
-  if (bn->bgpn_major == BGP_NOTIFY_CEASE &&
-      (bn->bgpn_minor == BGP_NOTIFY_CEASE_ADMIN_SHUTDOWN || bn->bgpn_minor == BGP_NOTIFY_CEASE_ADMIN_RESET)) {
-    if (rem_len) {
-      pkt_ptr = (pkt + BGP_MIN_NOTIFICATION_MSG_SIZE);
-      bnsm = (struct bgp_notification_shutdown_msg *) pkt_ptr;
+  char bgp_peer_str[INET6_ADDRSTRLEN];
+  bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
+  Log(LOG_INFO, "INFO ( %s/%s ): [%s] BGP_NOTIFICATION received (%u, %u). Shutdown Message: '%s'\n",
+      config.name, bms->log_str, bgp_peer_str, notif->code, notif->subcode, shutdown_msg);
 
-      if (bnsm->bgpnsm_len <= rem_len && bnsm->bgpnsm_len < shutdown_msglen) {
-        memcpy(shutdown_msg, bnsm->bgpnsm_data, bnsm->bgpnsm_len);
-        shutdown_msg[bnsm->bgpnsm_len] = '\0';
+  return ERR;
+}
 
-        ret += (bnsm->bgpnsm_len + 1);
-        rem_len -= (bnsm->bgpnsm_len + 1);
-      }
+int bgp_process_msg_keepalive(struct bgp_msg_data *bmd, const Opaque_BgpMessage *bgp_msg, time_t now, bool online) {
+
+  struct bgp_peer *peer = bmd->peer;
+  struct bgp_misc_structs *bms = bgp_select_misc_db(peer->type);
+
+  char bgp_peer_str[INET6_ADDRSTRLEN];
+  bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
+  Log(LOG_DEBUG, "DEBUG ( %s/%s ): [%s] BGP_KEEPALIVE received\n", config.name, bms->log_str, bgp_peer_str);
+
+  /* If we didn't pass through a successful BGP OPEN exchange just yet
+     let's temporarily silently discard BGP KEEPALIVEs */
+  if (peer->status >= OpenSent) {
+    if (peer->status < Established) peer->status = Established;
+    if (online) {
+      char bgp_reply_pkt[BGP_BUFFER_SIZE], *bgp_reply_pkt_ptr;
+
+      memset(bgp_reply_pkt, 0, BGP_BUFFER_SIZE);
+      bgp_reply_pkt_ptr = bgp_reply_pkt;
+      bgp_reply_pkt_ptr += bgp_write_keepalive_msg(bgp_reply_pkt_ptr);
+      send(peer->fd, bgp_reply_pkt, bgp_reply_pkt_ptr - bgp_reply_pkt, 0);
+      peer->last_keepalive = now;
+
+      bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
+      Log(LOG_DEBUG, "DEBUG ( %s/%s ): [%s] BGP_KEEPALIVE sent\n", config.name, bms->log_str, bgp_peer_str);
     }
   }
 
-  return ret;
+  return SUCCESS;
 }
 
-int bgp_parse_update_msg(struct bgp_msg_data *bmd, const ParsedBgp *bgp_msg) {
+int bgp_process_msg_update(struct bgp_msg_data *bmd, const Opaque_BgpMessage *bgp_msg) {
   struct bgp_misc_structs *bms;
   struct bgp_peer *peer = bmd->peer;
-  char bgp_peer_str[INET6_ADDRSTRLEN];
-  struct bgp_header bhdr;
-  struct bgp_attr attr;
-  struct bgp_attr_extra attr_extra;
-  u_int16_t attribute_len;
-  u_int16_t update_len;
-  u_int16_t withdraw_len;
-  u_int16_t end, tmp;
-  struct bgp_nlri update;
-  struct bgp_nlri withdraw;
-  struct bgp_nlri mp_update;
-  struct bgp_nlri mp_withdraw;
-  int ret, parsed = FALSE;
 
-  if (!peer || !bgp_msg) return ERR;
+  if (peer->status < Established) {
+    char bgp_peer_str[INET6_ADDRSTRLEN];
+    bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
+    Log(LOG_DEBUG, "DEBUG ( %s/%s ): [%s] BGP UPDATE received (no neighbor). Discarding.\n",
+        config.name, bms->log_str, bgp_peer_str);
+    return BGP_NOTIFY_FSM_ERR;
+  }
+
+  if (!peer || !bgp_msg) return BGP_NOTIFY_UPDATE_ERR;
 
   bms = bgp_select_misc_db(peer->type);
 
-  if (!bms) return ERR;
+  if (!bms) return BGP_NOTIFY_UPDATE_ERR;
 
-  BgpUpdateResult bgp_update_res = netgauze_bgp_update_get_updates(peer, bgp_msg->message);
+  // TODO move this logic into one function so that bgp and bmp behaviour is shared
+  BgpUpdateResult bgp_update_res = netgauze_bgp_update_get_updates(peer, bgp_msg);
   if (bgp_update_res.tag == CResult_Err) {
     Log(LOG_INFO, "netgauze bad bgp message type %d in %s\n", bgp_update_res.err._0, __func__);
-    return ERR;
+    return BGP_NOTIFY_UPDATE_ERR;
   }
 
   ParsedBgpUpdate bgp_parsed = bgp_update_res.ok;
@@ -379,6 +333,7 @@ int bgp_parse_update_msg(struct bgp_msg_data *bmd, const ParsedBgp *bgp_msg) {
   for (int i = 0; i < bgp_parsed.packets.len; i += 1) {
     pkt = &bgp_parsed.packets.base_ptr[i];
 
+    // TODO handle process_update/withdraw error ? they were not handled before...
     switch (pkt->update_type) {
       case BGP_NLRI_UPDATE:
         bgp_process_update(bmd, &pkt->prefix, &pkt->attr, &pkt->attr_extra, pkt->afi, pkt->safi, i);
@@ -413,20 +368,7 @@ int bgp_parse_update_msg(struct bgp_msg_data *bmd, const ParsedBgp *bgp_msg) {
 
   CSlice_free_ProcessPacket(bgp_parsed.packets);
 
-  /* Everything is done.  We unintern temporary structures which
-	 interned in bgp_attr_parse(). */
-  if (attr.aspath)
-    aspath_unintern(peer, attr.aspath);
-  if (attr.community)
-    community_unintern(peer, attr.community);
-  if (attr.ecommunity)
-    ecommunity_unintern(peer, attr.ecommunity);
-  if (attr.lcommunity)
-    lcommunity_unintern(peer, attr.lcommunity);
-
-  ret = ntohs(bhdr.bgpo_len);
-
-  return ret;
+  return SUCCESS;
 }
 
 /* BGP UPDATE Attribute parsing */
