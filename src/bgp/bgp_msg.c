@@ -319,15 +319,18 @@ int bgp_process_msg_update(struct bgp_msg_data *bmd, const Opaque_BgpMessage *bg
 
   if (!bms) return BGP_NOTIFY_UPDATE_ERR;
 
-  // TODO move this logic into one function so that bgp and bmp behaviour is shared
   BgpUpdateResult bgp_update_res = netgauze_bgp_update_get_updates(peer, bgp_msg);
   if (bgp_update_res.tag == CResult_Err) {
     Log(LOG_INFO, "netgauze bad bgp message type %d in %s\n", bgp_update_res.err._0, __func__);
     return BGP_NOTIFY_UPDATE_ERR;
   }
-
   ParsedBgpUpdate bgp_parsed = bgp_update_res.ok;
+  process_update_packets(bmd, bms, peer, bgp_parsed);
 
+  return SUCCESS;
+}
+
+int process_update_packets(struct bgp_msg_data *bmd, struct bgp_misc_structs *bms, struct bgp_peer *peer, ParsedBgpUpdate bgp_parsed) {
   ProcessPacket *pkt = NULL;
   for (int i = 0; i < bgp_parsed.packets.len; i += 1) {
     pkt = &bgp_parsed.packets.base_ptr[i];
@@ -340,7 +343,7 @@ int bgp_process_msg_update(struct bgp_msg_data *bmd, const Opaque_BgpMessage *bg
       case BGP_NLRI_WITHDRAW:
         bgp_process_withdraw(bmd, &pkt->prefix, &pkt->attr, &pkt->attr_extra, pkt->afi, pkt->safi, i);
         break;
-      case BGP_NLRI_UNDEFINED: {
+      case BGP_NLRI_EOR: {
         // this is EoR
         struct bgp_info ri = { 0 };
         ri.bmed = bmd->extra;
@@ -369,7 +372,6 @@ int bgp_process_msg_update(struct bgp_msg_data *bmd, const Opaque_BgpMessage *bg
 
   return SUCCESS;
 }
-
 
 int
 bgp_process_update(struct bgp_msg_data *bmd, struct prefix *p, void *attr, struct bgp_attr_extra *attr_extra, afi_t afi,
