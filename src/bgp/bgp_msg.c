@@ -29,7 +29,7 @@ int bgp_parse_msg(struct bgp_peer *peer, time_t now, int online) {
   struct bgp_misc_structs *bms;
   struct bgp_msg_data bmd;
   char *bgp_packet_ptr;
-  int bgp_len = 0;
+  int bgp_len;
 
   if (!peer || !peer->buf.base) return ERR;
 
