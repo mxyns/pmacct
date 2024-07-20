@@ -26,11 +26,8 @@
 extern int bgp_max_msglen_check(u_int32_t);
 extern int bgp_marker_check(struct bgp_header *, int);
 extern int bgp_parse_msg(struct bgp_peer *, time_t, int);
-extern int bgp_parse_open_msg(struct bgp_msg_data *, char *, time_t, int);
-extern int bgp_parse_update_msg(struct bgp_msg_data *, char *);
 extern int bgp_parse_notification_msg(struct bgp_msg_data *, char *, u_int8_t *, u_int8_t *, char *, u_int16_t);
 extern int bgp_write_keepalive_msg(char *);
-extern int bgp_write_open_msg(char *, char *, int, struct bgp_peer *);
 extern int bgp_write_notification_msg(char *, int, u_int8_t, u_int8_t, char *);
 extern int bgp_attr_parse(struct bgp_peer *, struct bgp_attr *, struct bgp_attr_extra *, char *, int, struct bgp_nlri *, struct bgp_nlri *);
 extern int bgp_attr_parse_community(struct bgp_peer *, u_int16_t, struct bgp_attr *, char *, u_int8_t);
@@ -50,4 +47,12 @@ extern int bgp_attr_parse_otc(struct bgp_peer *, u_int16_t, struct bgp_attr_extr
 extern int bgp_nlri_parse(struct bgp_msg_data *, void *, struct bgp_attr_extra *, struct bgp_nlri *, int);
 extern int bgp_process_update(struct bgp_msg_data *, struct prefix *, void *, struct bgp_attr_extra *, afi_t, safi_t, int);
 extern int bgp_process_withdraw(struct bgp_msg_data *, struct prefix *, void *, struct bgp_attr_extra *, afi_t, safi_t, int);
+
+#ifndef PMACCT_GAUZE_BUILD
+#include "bgp.h"
+extern int bgp_parse_update_msg(struct bgp_msg_data *, const ParsedBgp *);
+extern int bgp_parse_open_msg(struct bgp_msg_data *, const ParsedBgp *, time_t, int);
+extern int bgp_write_open_msg(char *msg, int buff_len, struct bgp_peer *peer, const Opaque_BgpMessage *open_rx);
+#endif
+
 #endif 
