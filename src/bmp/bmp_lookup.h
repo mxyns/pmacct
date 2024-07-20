@@ -23,6 +23,7 @@
 #define BMP_LOOKUP_H
 
 /* includes */
+#include "../bgp/bgp_lookup.h"
 
 /* defines */ 
 

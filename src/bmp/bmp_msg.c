@@ -296,7 +296,7 @@ bmp_process_msg_peer_up(struct bmp_peer *bmpp, const ParsedBmp *netgauze_parsed)
     return;
   }
 
-  netgauze_bgp_process_open(peer_up_open_tx.ok.message, &bgp_peer_loc);
+  netgauze_bgp_process_open(peer_up_open_tx.ok.message, &bgp_peer_loc, 5, TRUE);
 
   memcpy(&bmpp->self.id, &bgp_peer_loc.id, sizeof(struct host_addr));
   memcpy(&bgp_peer_loc.addr, &blpu.local_ip, sizeof(struct host_addr));
@@ -310,7 +310,7 @@ bmp_process_msg_peer_up(struct bmp_peer *bmpp, const ParsedBmp *netgauze_parsed)
     return;
   }
 
-  netgauze_bgp_process_open(peer_up_open_rx.ok.message, &bgp_peer_rem);
+  netgauze_bgp_process_open(peer_up_open_rx.ok.message, &bgp_peer_rem, 5, TRUE);
 
   memcpy(&bgp_peer_rem.addr, &bdata.peer_ip, sizeof(struct host_addr));
 
@@ -517,13 +517,16 @@ void bmp_process_msg_route_monitor(struct bmp_peer *bmpp, const ParsedBmp *netga
 
   encode_tstamp_arrival(bms->log_tstamp_str, SRVBUFLEN, &bdata.tstamp_arrival, TRUE);
 
-  BgpUpdateResult bgp_result = netgauze_bgp_update_get_updates(&bmpp->self, netgauze_parsed->message);
-
-  if (bgp_result.tag == CResult_Err) {
-    Log(LOG_INFO, "INFO ( %s/%s ): [%s] [route monitor] packet discarded: could not read BGP PDUs from Netgauze code=%d\n",
-        config.name, bms->log_str, peer->addr_str, bgp_result.err.tag);
+  BmpRouteMonitorUpdateResult bmp_rm_upd_res = netgauze_bmp_route_monitor_get_bgp_update(netgauze_parsed->message);
+  if (bmp_rm_upd_res.tag == CResult_Err) {
+    Log(LOG_INFO,
+        "INFO ( %s/%s ): [%s] [route monitor] packet discarded: bad bmp message type received %d\n",
+        config.name, bms->log_str, peer->addr_str, bmp_rm_upd_res.err._0);
     return;
   }
+
+  BgpUpdateResult bgp_result = netgauze_bgp_update_get_updates(&bmpp->self, bmp_rm_upd_res.ok);
+  assert(bgp_result.tag == CResult_Ok); // assert because we know by contract that the msg gotten from the bmp_rm is a bgp_upd
 
   ParsedBgpUpdate bgp_parsed = bgp_result.ok;
 
