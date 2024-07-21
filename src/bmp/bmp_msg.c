@@ -160,7 +160,7 @@ void bmp_process_msg_init(struct bmp_peer *bmpp, ParsedBmp *parsed_bmp) {
     return;
   }
 
-  CSlice_bmp_log_tlv tlv_slice = tlv_result.ok;
+  OwnedSlice_bmp_log_tlv tlv_slice = tlv_result.ok;
 
   for (struct bmp_log_tlv *tlv = tlv_slice.base_ptr; tlv && tlv < tlv_slice.end_ptr; tlv += 1) {
     if (bmp_tlv_list_add(tlvs, tlv->pen, tlv->type, tlv->len, tlv->val) == ERR) {
@@ -222,7 +222,7 @@ void bmp_process_msg_term(struct bmp_peer *bmpp, const ParsedBmp *parsed_bmp) {
     return;
   }
 
-  CSlice_bmp_log_tlv tlv_slice = tlv_result.ok;
+  OwnedSlice_bmp_log_tlv tlv_slice = tlv_result.ok;
 
   for (struct bmp_log_tlv *tlv = tlv_slice.base_ptr; tlv && tlv < tlv_slice.end_ptr; tlv += 1) {
     if (bmp_tlv_list_add(tlvs, tlv->pen, tlv->type, tlv->len, tlv->val) == ERR) {
@@ -340,7 +340,7 @@ bmp_process_msg_peer_up(struct bmp_peer *bmpp, const ParsedBmp *netgauze_parsed)
   struct pm_list *tlvs = bmp_tlv_list_new(NULL, bmp_tlv_list_node_del);
   if (!tlvs) return;
 
-  CSlice_bmp_log_tlv tlv_list = tlv_result.ok;
+  OwnedSlice_bmp_log_tlv tlv_list = tlv_result.ok;
   for (struct bmp_log_tlv *tlv = tlv_list.base_ptr; tlv && tlv < tlv_list.end_ptr; tlv += 1) {
       if (bmp_tlv_list_add(tlvs, tlv->pen, tlv->type, tlv->len, tlv->val) == ERR) {
         Log(LOG_ERR, "INFO ( %s/%s ): [%s] [peer up] bmp_tlv_list_add failed\n",
@@ -580,7 +580,7 @@ void bmp_process_msg_stats(struct bmp_peer *bmpp, const ParsedBmp *parsed_bmp) {
     return;
   }
 
-  CSlice_bmp_log_stats stats = stats_result.ok;
+  OwnedSlice_bmp_log_stats stats = stats_result.ok;
 
   if (!bdata.family) goto cleanup;
 
