@@ -113,7 +113,7 @@ jobs:
           path: pmacct
           fetch-depth: 0
           fetch-tags: 1
-          ref: netgauze-exp
+          submodules: "recursive"
 
       - name: Build containers
         uses: ./pmacct/.github/actions/build_containers/
