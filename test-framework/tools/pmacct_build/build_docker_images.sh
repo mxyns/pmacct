@@ -18,11 +18,11 @@ if "$PMACCT_ROOT_LOCATION/config.status" --config | grep -q "enable-pmacct-gauze
     exit 1
   fi
 
-  docker build --build-arg NUM_WORKERS=$(nproc) -t base:$TAG -f $PMACCT_ROOT_LOCATION/docker/base/Dockerfile $PMACCT_ROOT_LOCATION || exit $?
+  docker build --build-arg NUM_WORKERS=$(nproc) -t base:$TAG -f $PMACCT_ROOT_LOCATION/docker/pmacct-gauze-base/Dockerfile $PMACCT_ROOT_LOCATION || exit $?
 else
 
   echo "Building pmacct docker images"
-  docker build --build-arg NUM_WORKERS=$(nproc) -t base:$TAG -f $PMACCT_ROOT_LOCATION/docker/pmacct-gauze-base/Dockerfile $PMACCT_ROOT_LOCATION || exit $?
+  docker build --build-arg NUM_WORKERS=$(nproc) -t base:$TAG -f $PMACCT_ROOT_LOCATION/docker/base/Dockerfile $PMACCT_ROOT_LOCATION || exit $?
 fi
 
 docker build --build-arg NUM_WORKERS=$(nproc) -t nfacctd:$TAG -f $PMACCT_ROOT_LOCATION/docker/nfacctd/Dockerfile $PMACCT_ROOT_LOCATION || exit $?
