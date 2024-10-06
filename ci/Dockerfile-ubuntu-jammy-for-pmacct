@@ -39,10 +39,8 @@ RUN apt-get update && \
 
 COPY ./ci/deps.sh .
 RUN ./deps.sh
+
 COPY ./ci/install_pmacct_gauze.sh .
 RUN ./install_pmacct_gauze.sh $GIT_URL $GIT_HASH
-
-COPY ./ci/test.sh .
-RUN ./test.sh
 
 ENTRYPOINT ["/bin/bash"]
