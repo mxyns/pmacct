@@ -65,7 +65,7 @@ jobs:
                 "--enable-mysql --enable-pgsql --enable-sqlite3 --enable-kafka --enable-geoipv2 --enable-jansson --enable-rabbitmq --enable-ndpi --enable-zmq --enable-avro --enable-serdes --enable-redis --enable-unyte-udp-notif",
                 "--enable-zmq"]
     env:
-      CONFIG_FLAGS: ${{ matrix.CONFIG_FLAGS }}
+      CONFIG_FLAGS: "${{ matrix.CONFIG_FLAGS }} --enable-pmacct-gauze"
     steps:
       - name: Info
         run: |
