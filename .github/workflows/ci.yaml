@@ -27,7 +27,15 @@ jobs:
           git config --global --add safe.directory $GITHUB_WORKSPACE
           git config --global --add safe.directory $GITHUB_WORKSPACE/src/external_libs/libcdada
           git rev-parse HEAD
-          docker build -f ci/Dockerfile-${{ matrix.builder-name }}-for-pmacct -t builder_${{ matrix.builder-name }} .
+          
+          GIT_URL="${{ github.GITHUB_REPOSITORY }}"
+          GIT_HASH="${{ github.GITHUB_SHA }}"
+          echo "Using state from $GIT_REPOSITORY on commit $GIT_HASH"
+  
+          docker build -f ci/Dockerfile-${{ matrix.builder-name }}-for-pmacct -t builder_${{ matrix.builder-name }} \ 
+            --build-arg GIT_URL=$GIT_URL \
+            --build-arg GIT_HASH=$GIT_HASH \
+            .
           mkdir -p /tmp/docker/
           docker save -o /tmp/docker/builder_${{ matrix.builder-name }}.tar builder_${{ matrix.builder-name }}
 

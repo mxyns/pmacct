@@ -4,6 +4,8 @@ FROM ubuntu:jammy
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG DISTRIBUTION=ubuntu:jammy
+ARG GIT_HASH
+ARG GIT_URL
 
 RUN apt-get update && \
     apt-get install -y \
@@ -37,5 +39,10 @@ RUN apt-get update && \
 
 COPY ./ci/deps.sh .
 RUN ./deps.sh
+COPY ./ci/install_pmacct_gauze.sh .
+RUN ./install_pmacct_gauze.sh $GIT_URL $GIT_HASH
+
+COPY ./ci/test.sh .
+RUN ./test.sh
 
 ENTRYPOINT ["/bin/bash"]
