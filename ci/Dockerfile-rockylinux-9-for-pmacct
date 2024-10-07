@@ -48,6 +48,4 @@ RUN ./deps.sh
 COPY ./ci/install_pmacct_gauze.sh .
 RUN ./install_pmacct_gauze.sh $GIT_URL $GIT_HASH
 
-ENV PKG_CONFIG_PATH="/usr/local/lib64/pkgconfig:$PKG_CONFIG_PATH"
-
 ENTRYPOINT ["/bin/bash"]
