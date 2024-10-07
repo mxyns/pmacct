@@ -42,7 +42,8 @@ RUN apt-get update && \
     sudo \
     wget \
     zlib1g-dev \
-    curl
+    curl \
+    clang
 
 WORKDIR /tmp/pmacct/
 # About to deal with deps installation
@@ -56,7 +57,6 @@ RUN ./ci/deps.sh
 
 # Install Rust and cargo-c
 WORKDIR /tmp
-RUN apt install -y clang
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly --target nightly --profile minimal
 ENV PATH="/root/.cargo/bin:${PATH}"
 RUN cargo install --git https://github.com/mxyns/cargo-c cargo-c
