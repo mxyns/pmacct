@@ -40,7 +40,7 @@ PMACCT_GAUZE_BUILD_DIR="$(pwd)/build-target"
 # install library to temporary folder because of permission issues
 cargo cinstall --destdir="$PMACCT_GAUZE_BUILD_DIR" -vv --package pmacct-gauze-lib
 # copy library manually to /usr/local/[include/lib]
-sudo cp -r -v "$PMACCT_GAUZE_BUILD_DIR/*" /
+sudo cp -r -v "$PMACCT_GAUZE_BUILD_DIR"/* /
 # update library cache
 sudo ldconfig
 rm -rf pmacct
