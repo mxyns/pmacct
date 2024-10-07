@@ -17,7 +17,7 @@ export PATH="/root/.cargo/bin:${PATH}"
 cargo install --git https://github.com/mxyns/cargo-c cargo-c
 
 # Install pmacct for its headers
-git clone --recursive $GIT_REPOSITORY pmacct && cd pmacct && git checkout $GIT_HASH
+git clone --recursive "$GIT_REPOSITORY" pmacct && cd pmacct && git checkout "$GIT_HASH"
 
 # Manually install libcdada because we want headers to be available
 # for pmacct-gauze too without handling CFLAGS and other crap
@@ -35,6 +35,12 @@ cd ..
 
 # Build pmacct-gauze now that headers are correctly generated
 export PMACCT_INCLUDE_DIR=$(pwd)
-sudo -E echo "PMACCT_INCLUDE_DIR=$PMACCT_INCLUDE_DIR"
-sudo -E /root/.cargo/bin/cargo cinstall --package pmacct-gauze-lib && ldconfig
+echo "PMACCT_INCLUDE_DIR=$PMACCT_INCLUDE_DIR"
+PMACCT_GAUZE_BUILD_DIR="$(pwd)/build-target"
+# install library to temporary folder because of permission issues
+cargo cinstall --destdir="$PMACCT_GAUZE_BUILD_DIR" -vv --package pmacct-gauze-lib
+# copy library manually to /usr/local/[include/lib]
+sudo cp -r "$PMACCT_GAUZE_BUILD_DIR/*" /
+# update library cache
+sudo ldconfig
 rm -rf pmacct
