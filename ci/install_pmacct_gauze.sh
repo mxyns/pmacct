@@ -12,7 +12,7 @@ echo "Installing pmacct-gauze for pmacct ($GIT_REPOSITORY) ref $GIT_HASH"
 # Install Rust and cargo-c and pmacct-gauze
 git clone --depth 1 https://github.com/mxyns/pmacct-gauze
 cd pmacct-gauze ; rm -rf ./.git ;
-sudo apt install -y curl curl clang && curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly --target nightly --profile minimal
+curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly --target nightly --profile minimal
 export PATH="/root/.cargo/bin:${PATH}"
 cargo install --git https://github.com/mxyns/cargo-c cargo-c
 

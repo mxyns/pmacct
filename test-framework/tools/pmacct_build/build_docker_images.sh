@@ -5,7 +5,7 @@ PMACCT_ROOT_LOCATION="$SCRIPT_DIR/../../../"
 
 TAG='_build'
 
-
+# TODO add script parameter to build with pmacct-gauze too
 if "$PMACCT_ROOT_LOCATION/config.status" --config | grep -q "enable-pmacct-gauze"; then
 
   echo "Building pmacct docker images with pmacct-gauze"

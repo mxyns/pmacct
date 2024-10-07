@@ -36,7 +36,9 @@ RUN apt-get update && \
     pkg-config \
     sudo \
     wget \
-    zlib1g-dev
+    zlib1g-dev \
+    curl \
+    clang
 
 COPY ./ci/deps.sh .
 RUN ./deps.sh

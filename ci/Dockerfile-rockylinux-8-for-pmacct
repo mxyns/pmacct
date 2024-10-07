@@ -39,7 +39,9 @@ RUN yum install -y dnf-plugins-core && \
     sudo \
     wget \
     which \
-    zlib-devel
+    zlib-devel \
+    curl \
+    clang
 
 COPY ./ci/deps.sh .
 RUN ./deps.sh
