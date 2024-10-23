@@ -42,7 +42,6 @@
 #define BGP_MIN_KEEPALVE_MSG_SIZE	BGP_HEADER_SIZE
 #define BGP_TCP_PORT			179
 #define BGP_VERSION4			4
-#define BGP_MAX_MSGLEN			4096
 #define CAPABILITY_CODE_AS4_LEN		4
 
 /* BGP message types */

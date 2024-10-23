@@ -23,7 +23,6 @@
 #define _BGP_MSG_H_
 
 /* prototypes */
-extern int bgp_max_msglen_check(u_int32_t);
 extern int bgp_marker_check(struct bgp_header *, int);
 extern int bgp_parse_msg(struct bgp_peer *, time_t, int);
 extern int bgp_write_keepalive_msg(char *);
