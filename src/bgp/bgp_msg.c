@@ -133,11 +133,6 @@ int bgp_process_msg_open(struct bgp_msg_data *bmd, const Opaque_BgpMessage *bgp_
   return SUCCESS;
 }
 
-int bgp_max_msglen_check(u_int32_t length) {
-  if (length <= BGP_MAX_MSGLEN) return SUCCESS;
-  else return ERR;
-}
-
 /* Marker check. */
 int bgp_marker_check(struct bgp_header *bhdr, int length) {
   int i;
