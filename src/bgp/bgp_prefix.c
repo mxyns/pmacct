@@ -560,18 +560,6 @@ prefix_free (struct prefix *p)
   free (p);
 }
 
-/* Utility function.  Check the string only contains digit
- * character.
- * FIXME str.[c|h] would be better place for this function. */
-int
-all_digit (const char *str)
-{
-  for (; *str != '\0'; str++)
-    if (!isdigit ((int) *str))
-      return 0;
-  return 1;
-}
-
 /* Utility function to convert ipv4 prefixes to Classful prefixes */
 void apply_classful_mask_ipv4 (struct prefix_ipv4 *p)
 {

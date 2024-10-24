@@ -30,7 +30,6 @@
 extern int bgp_peer_cmp_bmp(const void *, const void *);
 extern int bgp_peer_host_addr_peer_dist_cmp(const void *, const void *);
 
-extern char *bmp_get_and_check_length(char **, u_int32_t *, u_int32_t);
 extern int bmp_jump_offset(char **, u_int32_t *, u_int32_t);
 extern void bmp_link_misc_structs(struct bgp_misc_structs *);
 extern struct bgp_peer *bmp_sync_loc_rem_peers(struct bgp_peer *, struct bgp_peer *);
@@ -39,7 +38,6 @@ extern void bmp_peer_close(struct bmp_peer *, int);
 
 extern char *bmp_term_reason_print(u_int16_t);
 
-extern void bmp_rib_type_set(struct bmp_chars *);
 extern char *bmp_rib_type_print(u_int8_t);
 
 extern void bgp_peer_log_msg_extras_bmp(struct bgp_peer *, int, int, int, void *);

@@ -159,6 +159,4 @@ extern void masklen2ip6 (int, struct in6_addr *);
 extern void str2in6_addr (const char *, struct in6_addr *);
 extern const char *inet6_ntoa (struct in6_addr);
 
-extern int all_digit (const char *);
-
 #endif
