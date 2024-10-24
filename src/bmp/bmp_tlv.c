@@ -35,24 +35,6 @@ int bmp_tlv_handle_ebit(u_int16_t *type)
   }
 }
 
-int bmp_tlv_get_pen(char **bmp_packet_ptr, u_int32_t *pkt_size, u_int16_t *len, u_int32_t *pen)
-{
-  char *pen_ptr = NULL;
-
-  if (((*pkt_size) < (*len)) || ((*len) < 4)) return FALSE;
-
-  pen_ptr = bmp_get_and_check_length(bmp_packet_ptr, pkt_size, 4);
-  if (pen_ptr) {
-    (*len) -= 4;
-    memcpy(pen, pen_ptr, 4);
-    (*pen) = ntohl((*pen));
-
-    return TRUE;
-  }
-
-  return FALSE;
-}
-
 char *bmp_tlv_type_print(struct bmp_log_tlv *tlv, const char *prefix, const struct bmp_tlv_def *registry, int max_registry_entries)
 {
   char *out = NULL;

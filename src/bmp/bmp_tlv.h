@@ -32,7 +32,6 @@ struct bmp_tlv_list_result {
 
 /* prototypes */
 extern int bmp_tlv_handle_ebit(u_int16_t *);
-extern int bmp_tlv_get_pen(char **, u_int32_t *, u_int16_t *, u_int32_t *);
 extern char *bmp_tlv_type_print(struct bmp_log_tlv *, const char *, const struct bmp_tlv_def *, int);
 extern char *bmp_tlv_value_print(struct bmp_log_tlv *, const struct bmp_tlv_def *, int);
 

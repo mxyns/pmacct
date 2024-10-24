@@ -66,7 +66,6 @@ extern void community_unintern (struct bgp_peer *, struct community *);
 extern unsigned int community_hash_make (struct community *);
 extern int community_cmp (const struct community *, const struct community *);
 extern struct community *community_delete (struct community *, struct community *);
-extern struct community *community_parse (struct bgp_peer *, u_int32_t *, u_short);
 extern int community_include (struct community *, u_int32_t);
 extern void community_del_val (struct community *, u_int32_t *);
 extern int community_str2com_simple(const char *, u_int32_t *);

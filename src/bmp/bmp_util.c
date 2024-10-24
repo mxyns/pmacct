@@ -33,21 +33,6 @@
 #include "plugin_cmn_avro.h"
 #endif
 
-char *bmp_get_and_check_length(char **bmp_packet_ptr, u_int32_t *pkt_size, u_int32_t len)
-{
-  char *current_ptr = NULL;
-  
-  if (bmp_packet_ptr && (*bmp_packet_ptr) && pkt_size) {
-    if ((*pkt_size) >= len) {
-      current_ptr = (*bmp_packet_ptr);
-      (*pkt_size) -= len;
-      (*bmp_packet_ptr) += len;
-    }
-  }
-
-  return current_ptr;
-}
-
 int bmp_jump_offset(char **bmp_packet_ptr, u_int32_t *len, u_int32_t offset)
 {
   int ret = ERR;
