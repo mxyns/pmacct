@@ -45,10 +45,8 @@ int bgp_parse_msg(struct bgp_peer *peer, time_t now, int online) {
 
     if (parse_result.tag == CResult_Err) {
       Log(LOG_INFO, "netgauze parse error: %s\n", netgauze_bgp_parse_error_str(parse_result.err));
-      if (parse_result.err.tag == BgpParseError_NetgauzeBgpError) {
-        netgauze_bgp_parse_result_free(parse_result);
-        return parse_result.err.netgauze_bgp_error.pmacct_error_code;
-      }
+      netgauze_bgp_parse_result_free(parse_result);
+      return parse_result.err.netgauze_bgp_error.pmacct_error_code;
     }
 
     int err = SUCCESS;
