@@ -298,6 +298,12 @@ int bgp_process_msg_update(struct bgp_msg_data *bmd, const Opaque_BgpMessage *bg
   struct bgp_misc_structs *bms;
   struct bgp_peer *peer = bmd->peer;
 
+  if (!peer || !bgp_msg) return BGP_NOTIFY_UPDATE_ERR;
+
+  bms = bgp_select_misc_db(peer->type);
+
+  if (!bms) return BGP_NOTIFY_UPDATE_ERR;
+
   if (peer->status < Established) {
     char bgp_peer_str[INET6_ADDRSTRLEN];
     bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
@@ -305,12 +311,6 @@ int bgp_process_msg_update(struct bgp_msg_data *bmd, const Opaque_BgpMessage *bg
         config.name, bms->log_str, bgp_peer_str);
     return BGP_NOTIFY_FSM_ERR;
   }
-
-  if (!peer || !bgp_msg) return BGP_NOTIFY_UPDATE_ERR;
-
-  bms = bgp_select_misc_db(peer->type);
-
-  if (!bms) return BGP_NOTIFY_UPDATE_ERR;
 
   BgpUpdateResult bgp_update_res = netgauze_bgp_update_get_updates(peer, bgp_msg);
   if (bgp_update_res.tag == CResult_Err) {
