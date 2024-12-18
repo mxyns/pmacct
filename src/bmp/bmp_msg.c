@@ -287,6 +287,14 @@ bmp_process_msg_peer_up(struct bmp_peer *bmpp, const ParsedBmp *netgauze_parsed)
   struct bmp_log_peer_up blpu = peer_up_hdr_res.ok;
 
   bgp_peer_loc.type = FUNC_TYPE_BMP;
+  struct bgp_msg_data bmd = {
+          .peer = &bgp_peer_loc,
+          .extra = {
+                  .id = BGP_MSG_EXTRA_DATA_BMP,
+                  .len = sizeof(bmed_bmp),
+                  .data = &bmed_bmp
+          }
+  };
   bgp_msg_data_set_data_bmp(&bmed_bmp, &bdata);
 
   BmpPeerUpOpenResult peer_up_open_tx = netgauze_bmp_peer_up_get_open_tx(netgauze_parsed->message);
@@ -296,12 +304,13 @@ bmp_process_msg_peer_up(struct bmp_peer *bmpp, const ParsedBmp *netgauze_parsed)
     return;
   }
 
-  netgauze_bgp_process_open(peer_up_open_tx.ok.message, &bgp_peer_loc, 5, TRUE);
+  bgp_process_msg_open(&bmd, peer_up_open_tx.ok.message, 5, TRUE);
 
   memcpy(&bmpp->self.id, &bgp_peer_loc.id, sizeof(struct host_addr));
   memcpy(&bgp_peer_loc.addr, &blpu.local_ip, sizeof(struct host_addr));
 
   bgp_peer_rem.type = FUNC_TYPE_BMP;
+  bmd.peer = &bgp_peer_rem;
 
   BmpPeerUpOpenResult peer_up_open_rx = netgauze_bmp_peer_up_get_open_rx(netgauze_parsed->message);
   if (peer_up_open_rx.tag == CResult_Err) {
@@ -310,7 +319,7 @@ bmp_process_msg_peer_up(struct bmp_peer *bmpp, const ParsedBmp *netgauze_parsed)
     return;
   }
 
-  netgauze_bgp_process_open(peer_up_open_rx.ok.message, &bgp_peer_rem, 5, TRUE);
+  bgp_process_msg_open(&bmd, peer_up_open_rx.ok.message, 5, TRUE);
 
   memcpy(&bgp_peer_rem.addr, &bdata.peer_ip, sizeof(struct host_addr));
 

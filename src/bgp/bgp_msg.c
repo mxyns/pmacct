@@ -100,11 +100,33 @@ int bgp_process_msg_open(struct bgp_msg_data *bmd, const Opaque_BgpMessage *bgp_
 
   if (!bms) return ERR;
 
-  BgpOpenProcessResult proc_res = netgauze_bgp_process_open(bgp_msg, peer, 5, online);
+  // TODO simplify that shit lol
+  if (!(!online || (peer->status < OpenSent))) {
+    return ERR;
+  }
+
+  BgpOpenProcessResult proc_res = netgauze_bgp_process_open(bgp_msg);
   if (proc_res.tag == CResult_Err) {
     Log(LOG_INFO, "netgauze could not process bgp open for error code %d\n", proc_res.err.tag);
     return ERR;
   }
+
+  char bgp_peer_str[INET6_ADDRSTRLEN];
+
+  BgpOpenInfo open_info = proc_res.ok;
+
+  peer->status = Active;
+
+  if (open_info.version != BGP_VERSION4) {
+    bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
+    Log(LOG_INFO, "INFO ( %s/%s ): [%s] Received malformed BGP Open packet (unsupported version).\n",
+        config.name, bms->log_str, bgp_peer_str);
+    return ERR;
+  }
+
+  peer->ht = MAX(5, open_info.hold_time);
+  peer->id = open_info.bgp_id;
+  peer->version = open_info.version;
 
   /* Check: duplicate Router-IDs; BGP only, ie. no BMP */
   if (!config.bgp_disable_router_id_check && bms->bgp_msg_open_router_id_check) {
@@ -114,12 +136,96 @@ int bgp_process_msg_open(struct bgp_msg_data *bmd, const Opaque_BgpMessage *bgp_
     if (check_ret) return check_ret;
   }
 
+  /* Record capabilities sent by the peer */
+  peer->cap_add_paths = open_info.capability_add_paths;
+  for (afi_t afi = 0; afi <= open_info.capability_add_paths.afi_max; afi++)
+    for (safi_t safi = 0; safi <= open_info.capability_add_paths.safi_max; safi++)
+      if (online) {
+        bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
+        Log(LOG_INFO, "INFO ( %s/%s ): [%s] Capability: ADD-PATHs [%u] AFI [%u] SAFI [%u] SEND_RECEIVE [%u]\n",
+            config.name, bms->log_str, bgp_peer_str, BGP_CAPABILITY_ADD_PATHS, afi, safi,
+            open_info.capability_add_paths.cap[afi][safi]);
+      }
+
+  /* We don't really care about the details for MP CAP because it is not used anyway */
+  for (afi_t afi = 0; afi <= open_info.capability_mp_protocol.afi_max; afi++)
+    for (safi_t safi = 0; safi <= open_info.capability_mp_protocol.safi_max; safi++)
+      if (open_info.capability_mp_protocol.cap[afi][safi] != 0) {
+        peer->cap_mp = TRUE;
+        if (online) {
+          bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
+          Log(LOG_INFO, "INFO ( %s/%s ): [%s] Capability: MultiProtocol [%u] AFI [%u] SAFI [%u]\n",
+              config.name, bms->log_str, bgp_peer_str, BGP_CAPABILITY_MULTIPROTOCOL, afi, safi);
+        }
+      }
+
+  /* This EXT NH ENC (Extended Next-Hop Encoding) is not recorded in the peer state and is only logged and sent back
+   * in the BGP OPEN Reply */
+  for (afi_t afi = 0; afi <= open_info.capability_ext_nh_enc_data.afi_max; afi++)
+    for (safi_t safi = 0; safi <= open_info.capability_ext_nh_enc_data.safi_max; safi++)
+      if (open_info.capability_ext_nh_enc_data.cap[afi][safi] != 0) {
+        if (online) {
+          bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
+          Log(LOG_INFO, "INFO ( %s/%s ): [%s] Capability: Extended Next Hop Encoding [%u] "
+                        "AFI [%u] SAFI [%u] Next Hop AFI [%u]\n",
+              config.name, bms->log_str, bgp_peer_str, BGP_CAPABILITY_EXTENDED_NEXT_HOP_ENCODING,
+              afi, safi, open_info.capability_ext_nh_enc_data.cap[afi][safi]);
+        }
+      }
+
+  if (open_info.capability_route_refresh) {
+    bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
+    Log(LOG_INFO, "INFO ( %s/%s ): [%s] Capability: Route Refresh [%u]\n",
+        config.name, bms->log_str, bgp_peer_str, BGP_CAPABILITY_ROUTE_REFRESH);
+  }
+
+  /* Let's grasp the remote ASN */
+  peer->cap_4as = open_info.capability_as4;
+  uint16_t remote_as = open_info.asn;
+  struct cap_4as remote_as4 = peer->cap_4as;
+  if (remote_as4.used && online) {
+    bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
+    Log(LOG_INFO, "INFO ( %s/%s ): [%s] Capability: 4-bytes AS [%u] ASN [%u]\n",
+        config.name, bms->log_str, bgp_peer_str, BGP_CAPABILITY_4_OCTET_AS_NUMBER, remote_as4.as4);
+  }
+
+  if (remote_as == BGP_AS_TRANS) {
+    if (remote_as4.used && remote_as4.as4 != 0 && remote_as4.as4 != BGP_AS_TRANS)
+      peer->as = remote_as4.as4;
+      /* It is not valid to use the transitional ASN in the BGP OPEN and
+          present an ASN == 0 or ASN == 23456 in the 4AS capability */
+    else {
+      bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
+      Log(LOG_INFO, "INFO ( %s/%s ): [%s] Received malformed BGP Open packet (invalid AS4 option).\n",
+          config.name, bms->log_str, bgp_peer_str);
+      return ERR;
+    }
+  }
+  else {
+    if ((!remote_as4.used && remote_as4.as4 == 0) || (remote_as4.used && remote_as4.as4 == remote_as))
+      peer->as = remote_as;
+      /* It is not valid to not use the transitional ASN in the BGP OPEN and
+        present an ASN != remote_as in the 4AS capability */
+    else {
+      bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
+      Log(LOG_INFO, "INFO ( %s/%s ): [%s] Received malformed BGP Open packet (mismatching AS4 option).\n",
+          config.name, bms->log_str, bgp_peer_str);
+      return ERR;
+    }
+  }
+
+  peer->status = Established;
+
   if (online) {
     char bgp_reply_pkt[BGP_BUFFER_SIZE], *bgp_reply_ptr = bgp_reply_pkt;
 
     /* Replying to OPEN message */
     if (!config.bgp_daemon_as) peer->myas = peer->as;
     else peer->myas = config.bgp_daemon_as;
+
+    bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
+    Log(LOG_INFO, "INFO ( %s/%s ): [%s] BGP_OPEN: Local AS: %u Remote AS: %u HoldTime: %u\n", config.name,
+        bms->log_str, bgp_peer_str, peer->myas, peer->as, peer->ht);
 
     bgp_reply_ptr += bgp_write_open_msg(bgp_reply_pkt, BGP_BUFFER_SIZE, peer, bgp_msg);
     /* sticking a KEEPALIVE to it */
