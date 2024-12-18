@@ -304,7 +304,7 @@ bmp_process_msg_peer_up(struct bmp_peer *bmpp, const ParsedBmp *netgauze_parsed)
     return;
   }
 
-  bgp_process_msg_open(&bmd, peer_up_open_tx.ok.message, 5, TRUE);
+  bgp_process_msg_open(&bmd, peer_up_open_tx.ok.message, 5, FALSE);
 
   memcpy(&bmpp->self.id, &bgp_peer_loc.id, sizeof(struct host_addr));
   memcpy(&bgp_peer_loc.addr, &blpu.local_ip, sizeof(struct host_addr));
@@ -319,7 +319,7 @@ bmp_process_msg_peer_up(struct bmp_peer *bmpp, const ParsedBmp *netgauze_parsed)
     return;
   }
 
-  bgp_process_msg_open(&bmd, peer_up_open_rx.ok.message, 5, TRUE);
+  bgp_process_msg_open(&bmd, peer_up_open_rx.ok.message, 5, FALSE);
 
   memcpy(&bgp_peer_rem.addr, &bdata.peer_ip, sizeof(struct host_addr));
 
