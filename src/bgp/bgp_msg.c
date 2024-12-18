@@ -100,8 +100,7 @@ int bgp_process_msg_open(struct bgp_msg_data *bmd, const Opaque_BgpMessage *bgp_
 
   if (!bms) return ERR;
 
-  // TODO simplify that shit lol
-  if (!(!online || (peer->status < OpenSent))) {
+  if (online && (peer->status < OpenSent)) {
     return ERR;
   }
 
