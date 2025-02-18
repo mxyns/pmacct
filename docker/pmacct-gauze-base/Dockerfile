@@ -59,7 +59,7 @@ RUN ./ci/deps.sh
 WORKDIR /tmp
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain nightly --target nightly --profile minimal
 ENV PATH="/root/.cargo/bin:${PATH}"
-RUN cargo install --git https://github.com/mxyns/cargo-c cargo-c
+RUN cargo install --git https://github.com/network-analytics/cargo-c cargo-c
 
 # Copy pmacct-gauze source files
 COPY ./docker/pmacct-gauze /tmp/pmacct-gauze
