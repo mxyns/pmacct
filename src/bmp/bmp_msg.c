@@ -168,7 +168,7 @@ void bmp_process_msg_init(struct bmp_peer *bmpp, ParsedBmp *parsed_bmp) {
   OwnedSlice_bmp_log_tlv tlv_slice = tlv_result.ok;
 
   for (struct bmp_log_tlv *tlv = tlv_slice.base_ptr; tlv && tlv < tlv_slice.end_ptr; tlv += 1) {
-    if (bmp_tlv_list_add(tlvs, tlv->pen, tlv->type, tlv->len, tlv->val) == ERR) {
+    if (bmp_tlv_list_add_v2(tlvs, tlv->pen, tlv->type, tlv->len, tlv->index, tlv->val) == ERR) {
       Log(LOG_ERR, "ERROR ( %s/%s ): [%s] [init] bmp_tlv_list_add() failed.\n", config.name, bms->log_str,
           peer->addr_str);
       exit_gracefully(1);
@@ -220,7 +220,7 @@ void bmp_process_msg_term(struct bmp_peer *bmpp, const ParsedBmp *parsed_bmp) {
   gettimeofday(&bdata.tstamp_arrival, NULL);
   memset(&bdata.tstamp, 0, sizeof(struct timeval));
 
-  tlvs = bmp_tlv_list_new(NULL, bmp_tlv_list_node_del);
+  tlvs = bmp_tlv_list_new_v2();
   if (!tlvs) return;
 
   BmpTlvListResult tlv_result = netgauze_bmp_get_tlvs(parsed_bmp->message);
@@ -233,7 +233,7 @@ void bmp_process_msg_term(struct bmp_peer *bmpp, const ParsedBmp *parsed_bmp) {
   OwnedSlice_bmp_log_tlv tlv_slice = tlv_result.ok;
 
   for (struct bmp_log_tlv *tlv = tlv_slice.base_ptr; tlv && tlv < tlv_slice.end_ptr; tlv += 1) {
-    if (bmp_tlv_list_add(tlvs, tlv->pen, tlv->type, tlv->len, tlv->val) == ERR) {
+    if (bmp_tlv_list_add_v2(tlvs, tlv->pen, tlv->type, tlv->len, tlv->index, tlv->val) == ERR) {
       Log(LOG_ERR, "ERROR ( %s/%s ): [%s] [init] bmp_tlv_list_add() failed.\n", config.name, bms->log_str,
           peer->addr_str);
       exit_gracefully(1);
@@ -362,42 +362,16 @@ bmp_process_msg_peer_up(struct bmp_peer *bmpp, const ParsedBmp *netgauze_parsed)
     return;
   }
 
-  struct pm_list *tlvs = bmp_tlv_list_new(NULL, bmp_tlv_list_node_del);
+  struct cdada_list_t *tlvs = bmp_tlv_list_new_v2();
   if (!tlvs) return;
 
   OwnedSlice_bmp_log_tlv tlv_list = tlv_result.ok;
   for (struct bmp_log_tlv *tlv = tlv_list.base_ptr; tlv && tlv < tlv_list.end_ptr; tlv += 1) {
-      if (bmp_tlv_list_add(tlvs, tlv->pen, tlv->type, tlv->len, tlv->val) == ERR) {
+      if (bmp_tlv_list_add_v2(tlvs, tlv->pen, tlv->type, tlv->len, tlv->index, tlv->val) == ERR) {
         Log(LOG_ERR, "INFO ( %s/%s ): [%s] [peer up] bmp_tlv_list_add failed\n",
             config.name, bms->log_str, peer->addr_str);
         bmp_tlv_list_destroy_v2(tlvs);
         return;
-      }
-
-      bmp_tlv_hdr_get_type(bth, &bmp_tlv_type);
-      bmp_tlv_hdr_get_len(bth, &bmp_tlv_len);
-      if (bmp_tlv_handle_ebit(&bmp_tlv_type)) {
-        if (!(bmp_tlv_get_pen(bmp_packet, len, &bmp_tlv_len, &pen))) {
-          Log(LOG_INFO, "INFO ( %s/%s ): [%s] [peer up] packet discarded: failed bmp_tlv_get_pen()\n",
-              config.name, bms->log_str, peer->addr_str);
-          bmp_tlv_list_destroy_v2(tlvs);
-          return;
-        }
-      }
-
-      if (!(bmp_tlv_value = bmp_get_and_check_length(bmp_packet, len, bmp_tlv_len))) {
-        Log(LOG_INFO,
-            "INFO ( %s/%s ): [%s] [peer up] packet discarded: failed bmp_get_and_check_length() BMP TLV info\n",
-            config.name, bms->log_str, peer->addr_str);
-        bmp_tlv_list_destroy_v2(tlvs);
-        return;
-      }
-
-      ret2 = bmp_tlv_list_add(tlvs, pen, bmp_tlv_type, bmp_tlv_len, bmp_tlv_value);
-      if (ret2 == ERR) {
-        Log(LOG_ERR, "ERROR ( %s/%s ): [%s] [peer up] bmp_tlv_list_add() failed.\n", config.name, bms->log_str,
-            peer->addr_str);
-        exit_gracefully(1);
       }
   }
 
@@ -450,7 +424,7 @@ void bmp_process_msg_peer_down(struct bmp_peer *bmpp, const ParsedBmp *parsed_bm
   struct bmp_log_peer_down blpd = peer_down_result.ok;
 
   /* TLV vars */
-  struct pm_list *tlvs = NULL;
+  struct cdada_list_t *tlvs = NULL;
   /* draft-ietf-grow-bmp-tlv */
   if (peer->version == BMP_V4) {
     // TODO handle when netgauze supports bmpv4
@@ -467,7 +441,7 @@ void bmp_process_msg_peer_down(struct bmp_peer *bmpp, const ParsedBmp *parsed_bm
 
   if (bms->msglog_backend_methods || bms->dump_backend_methods) bgp_peer_log_seq_increment(&bms->log_seq);
 
-  if (tlvs && (!pm_listcount(tlvs) || !bms->dump_backend_methods)) bmp_tlv_list_destroy(tlvs);
+  if (tlvs && (!cdada_list_size(tlvs) || !bms->dump_backend_methods)) bmp_tlv_list_destroy_v2(tlvs);
 
   /* Find the relevant BGP peer (matching peer_ip and peer_distinguisher) */
   if (bdata.family == AF_INET) {
@@ -654,7 +628,7 @@ void bmp_process_msg_stats(struct bmp_peer *bmpp, const ParsedBmp *parsed_bmp) {
 
     if (bms->msglog_backend_methods || bms->dump_backend_methods) bgp_peer_log_seq_increment(&bms->log_seq);
 
-    if (tlvs && (!pm_listcount(tlvs) || !bms->dump_backend_methods)) bmp_tlv_list_destroy_v2(tlvs);
+    if (tlvs && (!cdada_list_size(tlvs) || !bms->dump_backend_methods)) bmp_tlv_list_destroy_v2(tlvs);
   }
 
 cleanup:

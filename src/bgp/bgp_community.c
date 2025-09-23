@@ -191,6 +191,26 @@ community_uniq_sort(struct bgp_peer *peer, struct community *com) {
   return new;
 }
 
+/* Create new community attribute. */
+struct community *
+community_parse (struct bgp_peer *peer, u_int32_t *pnt, u_short length)
+{
+  struct community tmp;
+  struct community *new;
+
+  /* If length is malformed return NULL. */
+  if (length % 4)
+    return NULL;
+
+  /* Make temporary community for hash look up. */
+  tmp.size = length / 4;
+  tmp.val = pnt;
+
+  new = community_uniq_sort (peer, &tmp);
+
+  return community_intern (peer, new);
+}
+
 /* Convert communities attribute to string.
 
    For Well-known communities value, below keyword is used.

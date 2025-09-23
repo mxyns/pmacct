@@ -24,6 +24,8 @@
 #include "bgp.h"
 #include "bgp_blackhole.h"
 #include "bgp_ls.h"
+#include "bgp_lcommunity.h"
+#include "bgp_ecommunity.h"
 
 
 int bgp_parse_msg(struct bgp_peer *peer, time_t now, int online) {
@@ -468,119 +470,6 @@ int process_update_packets(struct bgp_msg_data *bmd, struct bgp_misc_structs *bm
   }
 
   CSlice_free_ProcessPacket(bgp_parsed.packets);
-
-  return SUCCESS;
-}
-
-/* BGP UPDATE Attribute parsing */
-int bgp_attr_parse(struct bgp_peer *peer, struct bgp_attr *attr, struct bgp_attr_extra *attr_extra,
-		   char *ptr, int len, struct bgp_nlri *mp_update, struct bgp_nlri *mp_withdraw)
-{
-  struct bgp_misc_structs *bms;
-  char bgp_peer_str[INET6_ADDRSTRLEN];
-  int to_the_end = len, ret;
-  u_int8_t flag, type, *tmp;
-  u_int16_t tmp16, attr_len;
-  struct aspath *as4_path = NULL;
-
-  if (!ptr) return ERR;
-
-  bms = bgp_select_misc_db(peer->type);
-
-  if (!bms) return ERR;
-
-  while (to_the_end > 0) {
-    if (to_the_end < BGP_ATTR_MIN_LEN) {
-      bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
-      Log(LOG_DEBUG, "DEBUG ( %s/%s ): [%s] bgp_attr_parse() failed: to_the_end < BGP_ATTR_MIN_LEN\n", config.name, bms->log_str, bgp_peer_str);
-      return ERR;
-    }
-
-    tmp = (u_int8_t *) ptr++;
-    to_the_end--;
-    flag = *tmp;
-    tmp = (u_int8_t *) ptr++;
-    to_the_end--;
-    type = *tmp;
-
-    /* Attribute length */
-    if (flag & BGP_ATTR_FLAG_EXTLEN) {
-      memcpy(&tmp16, ptr, 2);
-      ptr += 2;
-      to_the_end -= 2;
-      attr_len = ntohs(tmp16);
-      if (attr_len > to_the_end) return ERR;
-    } else {
-      tmp = (u_int8_t *) ptr++;
-      to_the_end--;
-      attr_len = *tmp;
-      if (attr_len > to_the_end) return ERR;
-    }
-
-    switch (type) {
-      case BGP_ATTR_AS_PATH:
-        ret = bgp_attr_parse_aspath(peer, attr_len, attr, ptr, flag);
-        break;
-      case BGP_ATTR_AS4_PATH:
-        ret = bgp_attr_parse_as4path(peer, attr_len, attr, ptr, flag, &as4_path);
-        break;
-      case BGP_ATTR_NEXT_HOP:
-        ret = bgp_attr_parse_nexthop(peer, attr_len, attr, ptr, flag);
-        break;
-      case BGP_ATTR_COMMUNITIES:
-        ret = bgp_attr_parse_community(peer, attr_len, attr, ptr, flag);
-        break;
-      case BGP_ATTR_EXT_COMMUNITIES:
-        ret = bgp_attr_parse_ecommunity(peer, attr_len, attr, ptr, flag);
-        break;
-      case BGP_ATTR_LARGE_COMMUNITIES:
-        ret = bgp_attr_parse_lcommunity(peer, attr_len, attr, ptr, flag);
-        break;
-      case BGP_ATTR_MULTI_EXIT_DISC:
-        ret = bgp_attr_parse_med(peer, attr_len, attr, ptr, flag);
-        break;
-      case BGP_ATTR_LOCAL_PREF:
-        ret = bgp_attr_parse_local_pref(peer, attr_len, attr, ptr, flag);
-        break;
-      case BGP_ATTR_ORIGIN:
-        ret = bgp_attr_parse_origin(peer, attr_len, attr, ptr, flag);
-        break;
-      case BGP_ATTR_MP_REACH_NLRI:
-        ret = bgp_attr_parse_mp_reach(peer, attr_len, attr, ptr, mp_update);
-        break;
-      case BGP_ATTR_MP_UNREACH_NLRI:
-        ret = bgp_attr_parse_mp_unreach(peer, attr_len, attr, ptr, mp_withdraw);
-        break;
-      case BGP_ATTR_AIGP:
-        ret = bgp_attr_parse_aigp(peer, attr_len, attr_extra, ptr, flag);
-        break;
-      case BGP_ATTR_PREFIX_SID:
-        ret = bgp_attr_parse_prefix_sid(peer, attr_len, attr_extra, ptr, flag);
-        break;
-      case BGP_ATTR_OTC:
-        ret = bgp_attr_parse_otc(peer, attr_len, attr_extra, ptr, flag);
-        break;
-      default:
-        ret = 0;
-        break;
-    }
-
-    if (ret < 0) return ret;
-
-    ptr += attr_len;
-    to_the_end -= attr_len;
-  }
-
-  if (as4_path) {
-    /* AS_PATH and AS4_PATH merge up */
-    ret = bgp_attr_munge_as4path(peer, attr, as4_path);
-
-    /* AS_PATH and AS4_PATH info are now fully merged;
-       hence we can free up temporary structures. */
-    aspath_unintern(peer, as4_path);
-
-    if (ret < 0) return ret;
-  }
 
   return SUCCESS;
 }
@@ -1064,6 +953,121 @@ int bgp_attr_parse_ls(struct bgp_peer *peer, u_int16_t len, struct bgp_attr_extr
 
   return SUCCESS;
 }
+
+/* BGP UPDATE Attribute parsing */
+int bgp_attr_parse(struct bgp_peer *peer, struct bgp_attr *attr, struct bgp_attr_extra *attr_extra,
+		   char *ptr, int len, struct bgp_nlri *mp_update, struct bgp_nlri *mp_withdraw)
+{
+  struct bgp_misc_structs *bms;
+  char bgp_peer_str[INET6_ADDRSTRLEN];
+  int to_the_end = len, ret;
+  u_int8_t flag, type, *tmp;
+  u_int16_t tmp16, attr_len;
+  struct aspath *as4_path = NULL;
+
+  if (!ptr) return ERR;
+
+  bms = bgp_select_misc_db(peer->type);
+
+  if (!bms) return ERR;
+
+  while (to_the_end > 0) {
+    if (to_the_end < BGP_ATTR_MIN_LEN) {
+      bgp_peer_print(peer, bgp_peer_str, INET6_ADDRSTRLEN);
+      Log(LOG_DEBUG, "DEBUG ( %s/%s ): [%s] bgp_attr_parse() failed: to_the_end < BGP_ATTR_MIN_LEN\n", config.name, bms->log_str, bgp_peer_str);
+      return ERR;
+    }
+
+    tmp = (u_int8_t *) ptr++;
+    to_the_end--;
+    flag = *tmp;
+    tmp = (u_int8_t *) ptr++;
+    to_the_end--;
+    type = *tmp;
+
+    /* Attribute length */
+    if (flag & BGP_ATTR_FLAG_EXTLEN) {
+      memcpy(&tmp16, ptr, 2);
+      ptr += 2;
+      to_the_end -= 2;
+      attr_len = ntohs(tmp16);
+      if (attr_len > to_the_end) return ERR;
+    } else {
+      tmp = (u_int8_t *) ptr++;
+      to_the_end--;
+      attr_len = *tmp;
+      if (attr_len > to_the_end) return ERR;
+    }
+
+    switch (type) {
+      case BGP_ATTR_AS_PATH:
+        ret = bgp_attr_parse_aspath(peer, attr_len, attr, ptr, flag);
+        break;
+      case BGP_ATTR_AS4_PATH:
+        ret = bgp_attr_parse_as4path(peer, attr_len, attr, ptr, flag, &as4_path);
+        break;
+      case BGP_ATTR_NEXT_HOP:
+        ret = bgp_attr_parse_nexthop(peer, attr_len, attr, ptr, flag);
+        break;
+      case BGP_ATTR_COMMUNITIES:
+        ret = bgp_attr_parse_community(peer, attr_len, attr, ptr, flag);
+        break;
+      case BGP_ATTR_EXT_COMMUNITIES:
+        ret = bgp_attr_parse_ecommunity(peer, attr_len, attr, ptr, flag);
+        break;
+      case BGP_ATTR_LARGE_COMMUNITIES:
+        ret = bgp_attr_parse_lcommunity(peer, attr_len, attr, ptr, flag);
+        break;
+      case BGP_ATTR_MULTI_EXIT_DISC:
+        ret = bgp_attr_parse_med(peer, attr_len, attr, ptr, flag);
+        break;
+      case BGP_ATTR_LOCAL_PREF:
+        ret = bgp_attr_parse_local_pref(peer, attr_len, attr, ptr, flag);
+        break;
+      case BGP_ATTR_ORIGIN:
+        ret = bgp_attr_parse_origin(peer, attr_len, attr, ptr, flag);
+        break;
+      case BGP_ATTR_MP_REACH_NLRI:
+        ret = bgp_attr_parse_mp_reach(peer, attr_len, attr, ptr, mp_update);
+        break;
+      case BGP_ATTR_MP_UNREACH_NLRI:
+        ret = bgp_attr_parse_mp_unreach(peer, attr_len, attr, ptr, mp_withdraw);
+        break;
+      case BGP_ATTR_AIGP:
+        ret = bgp_attr_parse_aigp(peer, attr_len, attr_extra, ptr, flag);
+        break;
+      case BGP_ATTR_PREFIX_SID:
+        ret = bgp_attr_parse_prefix_sid(peer, attr_len, attr_extra, ptr, flag);
+        break;
+      case BGP_ATTR_OTC:
+        ret = bgp_attr_parse_otc(peer, attr_len, attr_extra, ptr, flag);
+        break;
+      default:
+        ret = 0;
+        break;
+    }
+
+    if (ret < 0) return ret;
+
+    ptr += attr_len;
+    to_the_end -= attr_len;
+  }
+
+  if (as4_path) {
+    /* AS_PATH and AS4_PATH merge up */
+    ret = bgp_attr_munge_as4path(peer, attr, as4_path);
+
+    /* AS_PATH and AS4_PATH info are now fully merged;
+       hence we can free up temporary structures. */
+    aspath_unintern(peer, as4_path);
+
+    if (ret < 0) return ret;
+  }
+
+  return SUCCESS;
+}
+
+
 
 int bgp_process_update(struct bgp_msg_data *bmd, struct prefix *p, void *attr, struct bgp_attr_extra *attr_extra, afi_t afi, safi_t safi, int idx)
 {

@@ -48,6 +48,21 @@ int bmp_jump_offset(char **bmp_packet_ptr, u_int32_t *len, u_int32_t offset)
   return ret;
 }
 
+char *bmp_get_and_check_length(char **bmp_packet_ptr, u_int32_t *pkt_size, u_int32_t len)
+{
+  char *current_ptr = NULL;
+  
+  if (bmp_packet_ptr && (*bmp_packet_ptr) && pkt_size) {
+    if ((*pkt_size) >= len) {
+      current_ptr = (*bmp_packet_ptr);
+      (*pkt_size) -= len;
+      (*bmp_packet_ptr) += len;
+    }
+  }
+
+  return current_ptr;
+}
+
 void bgp_peer_log_msg_extras_bmp(struct bgp_peer *peer, int etype, int log_type, int output, void *void_obj)
 {
   struct bgp_misc_structs *bms;

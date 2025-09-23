@@ -47,6 +47,7 @@ extern int bgp_extra_data_cmp_bmp(struct bgp_msg_extra_data *, struct bgp_msg_ex
 extern int bgp_extra_data_process_bmp(struct bgp_msg_extra_data *, struct bgp_info *, int, int);
 extern void bgp_extra_data_free_bmp(struct bgp_msg_extra_data *);
 extern void bgp_extra_data_print_bmp(struct bgp_msg_extra_data *, int, void *);
+extern char *bmp_get_and_check_length(char **bmp_packet_ptr, u_int32_t *pkt_size, u_int32_t len);
 
 extern void encode_tstamp_arrival(char *, int, struct timeval *, int);
 extern char *decode_tstamp_arrival(char *);
