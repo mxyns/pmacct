@@ -25,7 +25,7 @@
 #include "bgp_xcs.h"
 #include "rpki/rpki.h"
 #include "thread_pool.h"
-#include "custom_packet_parsing/packet_processor.h"
+#include "packet_processor/packet_processor.h"
 #if defined WITH_EBPF
 #include "ebpf/ebpf_rp_balancer.h"
 #endif
