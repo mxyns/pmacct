@@ -134,6 +134,8 @@ struct NF9_DATA_FLOWSET_HEADER {
 #define NF9_IN_DST_MAC                  80 //
 #define NF9_OUT_SRC_MAC                 81
 /* ... */
+#define NF9_FLOW_MPLS_RD                90
+/* ... */
 #define NF9_FLOW_APPLICATION_DESC	94
 #define NF9_FLOW_APPLICATION_ID		95
 #define NF9_FLOW_APPLICATION_NAME	96
@@ -159,7 +161,7 @@ struct NF9_DATA_FLOWSET_HEADER {
 #define NF9_OPT_SCOPE_SYSTEM            1
 
 /* Stuff pertaining to the templates that softflowd uses */
-#define NF9_SOFTFLOWD_TEMPLATE_NRECORDS	35
+#define NF9_SOFTFLOWD_TEMPLATE_NRECORDS	36
 struct NF9_SOFTFLOWD_TEMPLATE {
 	struct NF9_TEMPLATE_FLOWSET_HEADER h;
 	struct NF9_TEMPLATE_FLOWSET_RECORD r[NF9_SOFTFLOWD_TEMPLATE_NRECORDS];
@@ -432,6 +434,13 @@ flow_to_flowset_mpls_label_top_handler(char *flowset, const struct FLOW *flow, i
   // memcpy(flowset, &flow->mpls_label[idx], size);
 
   return 0;
+}
+static int
+flow_to_flowset_fixed_rd_handler(char *flowset, const struct FLOW *flow, int idx, int size)
+{
+	Log(LOG_INFO, "%s size=%d\n", __func__, size);
+	memcpy(flowset, &config.nfprobe_set_rd, size);
+	return 0;
 }
 
 #if defined (WITH_NDPI)
@@ -1016,6 +1025,18 @@ nf9_init_template(void)
           v4_int_template_out.r[rcount].length = 3;
           rcount++;
         }
+	if (config.nfprobe_version == 10 && config.nfprobe_set_rd_enabled) {
+		printf("config.nfprobe_set_rd_enabled\n");
+		v4_template.r[rcount].type = htons(NF9_FLOW_MPLS_RD);
+		v4_template.r[rcount].length = htons(8);
+		v4_int_template.r[rcount].handler = flow_to_flowset_fixed_rd_handler;
+		v4_int_template.r[rcount].length = 8;
+		v4_template_out.r[rcount].type = htons(NF9_FLOW_MPLS_RD);
+		v4_template_out.r[rcount].length = htons(8);
+		v4_int_template_out.r[rcount].handler = flow_to_flowset_fixed_rd_handler;
+		v4_int_template_out.r[rcount].length = 8;
+		rcount++;
+	}
 	if (config.nfprobe_version == 10 && config.nfprobe_what_to_count & COUNT_TAG) {
 	  int rlen = sizeof(pm_id_t);
 

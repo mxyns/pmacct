@@ -896,9 +896,12 @@ static struct template_cache_entry *compose_template(struct template_hdr_v9 *hdr
     /* Let's determine if we use legacy template registry or the
        new template database (ie. if we have a PEN or high field
        value, >= 384) */
+    Log(LOG_INFO, "%s: type=%d pen=%p, TPL_MAX_ELEM_REPEATS=%d\n", __func__, type, pen, TPL_MAX_ELEM_REPEATS);
     if (type < NF9_MAX_DEFINED_FIELD && !pen) {
       if (tpl->fld[type].count < TPL_MAX_ELEM_REPEATS) {
         tpl->fld[type].count++;
+        Log(LOG_INFO, "%s: tpl=%p fld=%p count=%d\n", __func__, tpl, tpl->fld, tpl->fld[type].count);
+
       } else {
         if (type == NF9_PADDING_OCTETS) {
           Log(LOG_WARNING,

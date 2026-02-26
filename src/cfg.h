@@ -594,6 +594,8 @@ struct configuration {
   char *nfprobe_engine;
   int nfprobe_peer_as;
   char *nfprobe_source_ip;
+  bool nfprobe_set_rd_enabled;
+  rd_t nfprobe_set_rd;
   struct host_addr nfprobe_source_ha;
   int nfprobe_ipprec;
   int nfprobe_direction;

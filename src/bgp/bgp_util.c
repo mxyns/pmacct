@@ -117,6 +117,39 @@ int bgp_rd_ntoh(rd_t *rd)
   return SUCCESS;
 }
 
+int bgp_rd_hton(rd_t *rd)
+{
+  struct rd_ip  *rdi;
+  struct rd_as  *rda;
+  struct rd_as4 *rda4;
+
+  if (!rd) return ERR;
+
+  switch(rd->type) {
+  case RD_TYPE_AS:
+    rda = (struct rd_as *) rd;
+    rda->as = htons(rda->as);
+    rda->val = htonl(rda->val);
+    break;
+  case RD_TYPE_IP:
+    rdi = (struct rd_ip *) rd;
+    rdi->val = htons(rdi->val);
+    break;
+  case RD_TYPE_AS4:
+    rda4 = (struct rd_as4 *) rd;
+    rda4->as = htonl(rda4->as);
+    rda4->val = htons(rda4->val);
+    break;
+  default:
+    return ERR;
+    break;
+  }
+
+  rd->type = htons(rd->type);
+
+  return SUCCESS;
+}
+
 int bgp_rd2str(char *str, rd_t *rd)
 {
   struct rd_ip  *rdi;

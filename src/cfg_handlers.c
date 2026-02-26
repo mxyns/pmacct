@@ -6034,6 +6034,40 @@ int cfg_key_classifier_ndpi_giveup_proto_udp(char *filename, char *name, char *v
   return changes;
 }
 
+int cfg_key_nfprobe_set_rd(char *filename, char *name, char *value_ptr)
+{
+  struct plugins_list_entry *list = plugins_list;
+  int changes = 0;
+
+  rd_t rd = { 0 };
+  if (!bgp_str2rd(&rd, value_ptr)) {
+    Log(LOG_ERR, "WARN: [%s] 'nfprobe_set_rd' must be a valid textual RD.\n", filename);
+    return ERR;
+  }
+
+  if (bgp_rd_hton(&rd) == ERR) {
+    Log(LOG_ERR, "WARN: [%s] 'nfprobe_set_rd' failed to convert RD.\n", filename);
+    return ERR;
+  }
+
+  if (!name) for (; list; list = list->next, changes++) {
+    list->cfg.nfprobe_set_rd_enabled = true;
+    list->cfg.nfprobe_set_rd = rd;
+  }
+  else {
+    for (; list; list = list->next) {
+      if (!strcmp(name, list->name)) {
+        list->cfg.nfprobe_set_rd_enabled = true;
+        list->cfg.nfprobe_set_rd = rd;
+        changes++;
+        break;
+      }
+    }
+  }
+
+  return changes;
+}
+
 int cfg_key_classifier_ndpi_giveup_proto_other(char *filename, char *name, char *value_ptr)
 {
   struct plugins_list_entry *list = plugins_list; 

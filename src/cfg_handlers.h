@@ -318,6 +318,7 @@ extern int cfg_key_nfprobe_version(char *, char *, char *);
 extern int cfg_key_nfprobe_engine(char *, char *, char *);
 extern int cfg_key_nfprobe_peer_as(char *, char *, char *);
 extern int cfg_key_nfprobe_source_ip(char *, char *, char *);
+extern int cfg_key_nfprobe_set_rd(char *, char *, char *);
 extern int cfg_key_nfprobe_ip_precedence(char *, char *, char *);
 extern int cfg_key_nfprobe_direction(char *, char *, char *);
 extern int cfg_key_nfprobe_ifindex(char *, char *, char *);

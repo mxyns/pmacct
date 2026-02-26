@@ -37,6 +37,7 @@ extern u_int16_t bgp_rd_origin_get(u_int16_t);
 extern void bgp_rd_origin_set(rd_t *, u_int16_t);
 extern const char *bgp_rd_origin_print(u_int16_t);
 extern int bgp_rd_ntoh(rd_t *);
+extern int bgp_rd_hton(rd_t *);
 extern int bgp_rd2str(char *, rd_t *);
 extern int bgp_str2rd(rd_t *, char *);
 extern int bgp_label2str(char *, u_char *);
