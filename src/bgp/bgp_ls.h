@@ -1,6 +1,6 @@
 /*  
     pmacct (Promiscuous mode IP Accounting package)
-    pmacct is Copyright (C) 2003-2025 by Paolo Lucente
+    pmacct is Copyright (C) 2003-2026 by Paolo Lucente
 */
 
 /*
@@ -101,11 +101,17 @@
 #define BGP_LS_PRINT_IEEE_TO_BITS	0x04
 
 #define BGP_LS_ISIS_SYS_ID_LEN		6 
+#define BGP_LS_MT_ID_MAX_LEN		8
 
 /* structures */
 struct bgp_ls_nd_igp_rtr_id {
   char id[8];
   u_int8_t len;
+};
+
+struct bgp_ls_mt_id {
+  u_char id[BGP_LS_MT_ID_MAX_LEN];
+  u_int16_t len;
 };
 
 struct bgp_ls_node_desc {
@@ -121,12 +127,14 @@ struct bgp_ls_link_desc {
   struct host_addr neigh_addr_v4;
   struct host_addr local_addr_v6;
   struct host_addr neigh_addr_v6;
+  struct bgp_ls_mt_id mt_id;
 };
 
 struct bgp_ls_prefix_desc {
   u_int8_t ospf_route_type;
   struct host_addr addr;
   struct host_mask mask;
+  struct bgp_ls_mt_id mt_id;
 };
 
 struct bgp_ls_node_nlri {
@@ -210,6 +218,7 @@ extern int bgp_ls_nlri_tlv_v4_addr_neigh_handler(u_char *, int, struct bgp_ls_nl
 extern int bgp_ls_nlri_tlv_v6_addr_if_handler(u_char *, int, struct bgp_ls_nlri *);
 extern int bgp_ls_nlri_tlv_v6_addr_neigh_handler(u_char *, int, struct bgp_ls_nlri *);
 extern int bgp_ls_nlri_tlv_ip_reach_handler(u_char *, int, struct bgp_ls_nlri *);
+extern int bgp_ls_nlri_tlv_mt_id_handler(u_char *, int, struct bgp_ls_nlri *);
 
 extern int bgp_ls_nd_tlv_as_handler(u_char *, int, struct bgp_ls_node_desc *);
 extern int bgp_ls_nd_tlv_id_handler(u_char *, int, struct bgp_ls_node_desc *);
@@ -229,6 +238,8 @@ extern int bgp_ls_attr_tlv_int32_print(u_char *, u_int16_t, char *, u_int8_t, in
 extern int bgp_ls_attr_tlv_msd_print(u_char *, u_int16_t, char *, u_int8_t, int, void *);
 extern int bgp_ls_attr_tlv_isis_areaid_print(u_char *, u_int16_t, char *, u_int8_t, int, void *);
 extern int bgp_ls_attr_tlv_igp_metric_print(u_char *, u_int16_t, char *, u_int8_t, int, void *);
+extern int bgp_ls_attr_tlv_mt_id_print(u_char *, u_int16_t, char *, u_int8_t, int, void *);
+extern void bgp_ls_mt_id_print(void *, char *, struct bgp_ls_mt_id *, int);
 
 extern int bgp_lookup_node_match_cmp_bgp_ls(struct bgp_info *, struct node_match_cmp_term2 *);
 extern void bgp_ls_srcdst_lookup(struct packet_ptrs *, int);

@@ -1,6 +1,6 @@
 /*  
     pmacct (Promiscuous mode IP Accounting package)
-    pmacct is Copyright (C) 2003-2025 by Paolo Lucente
+    pmacct is Copyright (C) 2003-2026 by Paolo Lucente
 */
 
 /*
@@ -578,6 +578,44 @@ int bgp_ls_nlri_tlv_v6_addr_neigh_handler(u_char *pnt, int len, struct bgp_ls_nl
   return ret;
 }
 
+int bgp_ls_nlri_tlv_mt_id_handler(u_char *pnt, int len, struct bgp_ls_nlri *blsn)
+{
+  struct bgp_ls_mt_id *mt_id = NULL;
+  char bgp_peer_str[INET6_ADDRSTRLEN];
+  
+  if (!pnt || !len || !blsn) {
+    return ERR;
+  }
+  
+  /*
+   * RFC 7752, Section 3.2.1.5:
+   *   Length = 2*n, where n is the number of MT-IDs.
+   */
+  if ((len % 2) || len > BGP_LS_MT_ID_MAX_LEN) {
+    bgp_peer_print(blsn->peer, bgp_peer_str, INET6_ADDRSTRLEN);
+    Log(LOG_WARNING, "WARN ( %s/%s/BGP ): [%s] BGP-LS Wrong Length TLV %u\n",
+        config.name, config.type, bgp_peer_str, BGP_LS_MULTI_TOPO_ID);
+    return ERR;
+  }
+  
+  switch (blsn->type) {
+  case BGP_LS_NLRI_LINK:
+    mt_id = &blsn->nlri.link.l.ldesc.mt_id;
+    break;
+  case BGP_LS_NLRI_V4_TOPO_PFX:
+  case BGP_LS_NLRI_V6_TOPO_PFX:
+    mt_id = &blsn->nlri.topo_pfx.p.pdesc.mt_id;
+    break;
+  default:
+    return ERR;
+  };
+  
+  memcpy(mt_id->id, pnt, len);
+  mt_id->len = len;
+  
+  return SUCCESS;
+}
+
 int bgp_ls_nlri_tlv_ip_reach_handler(u_char *pnt, int len, struct bgp_ls_nlri *blsn)
 {
   struct bgp_misc_structs *bms;
@@ -860,6 +898,8 @@ int bgp_ls_log_msg(struct bgp_ls_nlri *blsn, struct bgp_attr_ls *blsa,
       bgp_ls_log_node_desc(obj, &blsn->nlri.link.l.loc_ndesc, blsn->proto, "local", output);
       bgp_ls_log_node_desc(obj, &blsn->nlri.link.l.rem_ndesc, blsn->proto, "remote", output);
 
+      bgp_ls_mt_id_print(obj, "multi_topology_id", &blsn->nlri.link.l.ldesc.mt_id, output);
+
       if (blsn->nlri.link.l.ldesc.local_addr_v4.family) {
         addr_to_str(ip_address, &blsn->nlri.link.l.ldesc.local_addr_v4);
         json_object_set_new_nocheck(obj, "local_addr_v4", json_string(ip_address));
@@ -884,6 +924,8 @@ int bgp_ls_log_msg(struct bgp_ls_nlri *blsn, struct bgp_attr_ls *blsa,
     case BGP_LS_NLRI_V4_TOPO_PFX:
     case BGP_LS_NLRI_V6_TOPO_PFX:
       bgp_ls_log_node_desc(obj, &blsn->nlri.topo_pfx.p.ndesc, blsn->proto, "local", output);
+
+      bgp_ls_mt_id_print(obj, "multi_topology_id", &blsn->nlri.topo_pfx.p.pdesc.mt_id, output);
 
       addr_mask_to_str(ip_addr_mask, sizeof(ip_addr_mask), &blsn->nlri.topo_pfx.p.pdesc.addr, &blsn->nlri.topo_pfx.p.pdesc.mask); 
       json_object_set_new_nocheck(obj, "ip_reach", json_string(ip_addr_mask));
@@ -1062,6 +1104,54 @@ int bgp_ls_attr_tlv_string_print(u_char *pnt, u_int16_t len, char *key, u_int8_t
   }
 
   return SUCCESS;
+}
+
+int bgp_ls_attr_tlv_mt_id_print(u_char *pnt, u_int16_t len, char *key, u_int8_t flags, int output, void *void_obj)
+{
+  if (!pnt || !len || !key || !output || !void_obj) {
+    return ERR;
+  }
+  
+  if (len % 2) {
+    return ERR;
+  }
+  
+  if (output == PRINT_OUTPUT_JSON) {
+#ifdef WITH_JANSSON
+    json_t *obj = void_obj;
+    char *value = NULL;
+  
+    value = malloc(len * 3);
+    if (!value) {
+      return ERR;
+    }
+  
+    memset(value, 0, len * 3);
+    serialize_hex(pnt, (u_char *) value, len);
+    json_object_set_new_nocheck(obj, key, json_string(value));
+    free(value);
+#endif
+  }
+  
+  return SUCCESS;
+}
+  
+void bgp_ls_mt_id_print(void *void_obj, char *key, struct bgp_ls_mt_id *mt_id, int output)
+{
+  if (!void_obj || !key || !mt_id || !mt_id->len) {
+    return;
+  }
+  
+  if (output == PRINT_OUTPUT_JSON) {
+#ifdef WITH_JANSSON
+    json_t *obj = void_obj;
+    char value[BGP_LS_MT_ID_MAX_LEN * 3];
+  
+    memset(value, 0, sizeof(value));
+    serialize_hex(mt_id->id, (u_char *) value, mt_id->len);
+    json_object_set_new_nocheck(obj, key, json_string(value));
+#endif
+  }
 }
 
 int bgp_ls_attr_tlv_ip_print(u_char *pnt, u_int16_t len, char *key, u_int8_t flags, int output, void *void_obj)
