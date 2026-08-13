@@ -81,6 +81,7 @@ const struct _map_index_internal_dictionary_line tag_map_index_entries_dictionar
   {PRETAG_IN_IFACE, PT_map_index_entries_input_handler},
   {PRETAG_OUT_IFACE, PT_map_index_entries_output_handler},
   {PRETAG_BGP_NEXTHOP, PT_map_index_entries_bgp_nexthop_handler},
+  {PRETAG_BPDI_NEXTHOP, PT_map_index_entries_nexthop_handler},
   {PRETAG_BPDI_BGP_NEXTHOP, PT_map_index_entries_bgp_nexthop_handler},
   {PRETAG_SRC_AS, PT_map_index_entries_src_as_handler},
   {PRETAG_DST_AS, PT_map_index_entries_dst_as_handler},
@@ -113,6 +114,7 @@ const struct _map_index_dictionary_line tag_map_index_fdata_dictionary[] = {
   {PRETAG_IN_IFACE, PT_map_index_fdata_input_handler},
   {PRETAG_OUT_IFACE, PT_map_index_fdata_output_handler},
   {PRETAG_BGP_NEXTHOP, PT_map_index_fdata_bgp_nexthop_handler},
+  {PRETAG_BPDI_NEXTHOP, PT_map_index_fdata_BPDI_nexthop_handler},
   {PRETAG_BPDI_BGP_NEXTHOP, PT_map_index_fdata_BPDI_bgp_nexthop_handler},
   {PRETAG_SRC_AS, PT_map_index_fdata_src_as_handler},
   {PRETAG_DST_AS, PT_map_index_fdata_dst_as_handler},
@@ -163,6 +165,8 @@ const struct _map_index_size_dictionary_line tag_map_index_entries_size_dictiona
   {PRETAG_DST_PORT, sizeof(u_int16_t)},
   {PRETAG_IS_MULTICAST, sizeof(u_int8_t)},
   {PRETAG_FWDSTATUS_ID, sizeof(u_int8_t)},
+  {PRETAG_BPDI_NEXTHOP, sizeof(struct host_addr)},
+  {PRETAG_BPDI_BGP_NEXTHOP, sizeof(struct host_addr)},
   {0, 0}
 };
 
@@ -243,7 +247,9 @@ const struct _map_dictionary_line bta_map_dictionary[] = {
 const struct _map_dictionary_line bpdi_map_dictionary[] = {
   {"id", PT_map_id_handler},
   {"ip", PT_map_ip_handler},
+  {"nexthop", BPDI_map_nexthop_handler},
   {"bgp_nexthop", BPDI_map_bgp_nexthop_handler},
+  {"peer_dst_as", PT_map_peer_dst_as_handler},
   {"", NULL}
 };
 

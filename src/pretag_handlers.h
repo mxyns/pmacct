@@ -79,6 +79,7 @@ extern int PT_map_index_entries_ip_handler(struct id_table_index *, int, pm_hash
 extern int PT_map_index_entries_ip_af_handler(struct id_table_index *, int, pm_hash_serial_t *, void *);
 extern int PT_map_index_entries_input_handler(struct id_table_index *, int, pm_hash_serial_t *, void *);
 extern int PT_map_index_entries_output_handler(struct id_table_index *, int, pm_hash_serial_t *, void *);
+extern int PT_map_index_entries_nexthop_handler(struct id_table_index *, int, pm_hash_serial_t *, void *);
 extern int PT_map_index_entries_bgp_nexthop_handler(struct id_table_index *, int, pm_hash_serial_t *, void *);
 extern int PT_map_index_entries_src_as_handler(struct id_table_index *, int, pm_hash_serial_t *, void *);
 extern int PT_map_index_entries_dst_as_handler(struct id_table_index *, int, pm_hash_serial_t *, void *);
@@ -107,6 +108,7 @@ extern int PT_map_index_fdata_ip_af_handler(struct id_table_index *, int, int, s
 extern int PT_map_index_fdata_input_handler(struct id_table_index *, int, int, struct id_entry *, pm_hash_serial_t *, void *); 
 extern int PT_map_index_fdata_output_handler(struct id_table_index *, int, int, struct id_entry *, pm_hash_serial_t *, void *); 
 extern int PT_map_index_fdata_bgp_nexthop_handler(struct id_table_index *, int, int, struct id_entry *, pm_hash_serial_t *, void *); 
+extern int PT_map_index_fdata_BPDI_nexthop_handler(struct id_table_index *, int, int, struct id_entry *, pm_hash_serial_t *, void *); 
 extern int PT_map_index_fdata_BPDI_bgp_nexthop_handler(struct id_table_index *, int, int, struct id_entry *, pm_hash_serial_t *, void *); 
 extern int PT_map_index_fdata_src_as_handler(struct id_table_index *, int, int, struct id_entry *, pm_hash_serial_t *, void *); 
 extern int PT_map_index_fdata_dst_as_handler(struct id_table_index *, int, int, struct id_entry *, pm_hash_serial_t *, void *); 
@@ -136,6 +138,7 @@ extern int BPAS_map_bgp_nexthop_handler(char *, struct id_entry *, char *, struc
 extern int BPAS_map_bgp_peer_dst_as_handler(char *, struct id_entry *, char *, struct plugin_requests *, int);
 
 /* BPDI_*: bgp_peer_dst_ip map specific handlers */
+extern int BPDI_map_nexthop_handler(char *, struct id_entry *, char *, struct plugin_requests *, int);
 extern int BPDI_map_bgp_nexthop_handler(char *, struct id_entry *, char *, struct plugin_requests *, int);
 
 /* BTA_*: bgp_agent_map specific handlers */
@@ -236,6 +239,7 @@ extern int PM_pretag_direction_handler(struct packet_ptrs *, void *, void *);
 extern int BPAS_bgp_nexthop_handler(struct packet_ptrs *, void *, void *);
 extern int BPAS_bgp_peer_dst_as_handler(struct packet_ptrs *, void *, void *);
 
+extern int BPDI_nexthop_handler(struct packet_ptrs *, void *, void *);
 extern int BPDI_bgp_nexthop_handler(struct packet_ptrs *, void *, void *);
 
 extern int BTA_lookup_bgp_port_handler(struct packet_ptrs *, void *, void *);

@@ -454,7 +454,28 @@ int BPAS_map_bgp_peer_dst_as_handler(char *filename, struct id_entry *e, char *v
   for (x = 0; e->func[x]; x++);
   if (config.bgp_daemon) {
     e->func[x] = BPAS_bgp_peer_dst_as_handler;
-    e->func_type[x] = PRETAG_BGP_NEXTHOP;
+    e->func_type[x] = PRETAG_PEER_DST_AS;
+  }
+  else return E_NOTFOUND;
+
+  return FALSE;
+}
+
+int BPDI_map_nexthop_handler(char *filename, struct id_entry *e, char *value, struct plugin_requests *req, int acct_type)
+{
+  int x = 0;
+
+  e->key.nexthop.neg = pt_check_neg(&value, &((struct id_table *) req->key_value_table)->flags);
+
+  if (!str_to_addr(value, &e->key.nexthop.a)) {
+    Log(LOG_WARNING, "WARN ( %s/%s ): [%s] Bad nexthop address '%s'.\n", config.name, config.type, filename, value);
+    return TRUE;
+  }
+
+  for (x = 0; e->func[x]; x++);
+  if (config.nfacctd_net & NF_NET_KEEP) {
+    e->func[x] = BPDI_nexthop_handler;
+    e->func_type[x] = PRETAG_BPDI_NEXTHOP;
   }
   else return E_NOTFOUND;
 
@@ -3358,6 +3379,37 @@ int BPAS_bgp_peer_dst_as_handler(struct packet_ptrs *pptrs, void *unused, void *
   else return (TRUE ^ entry->key.peer_dst_as.neg);
 }
 
+int BPDI_nexthop_handler(struct packet_ptrs *pptrs, void *unused, void *e)
+{
+  struct id_entry *entry = e;
+  struct struct_header_v5 *hdr = (struct struct_header_v5 *) pptrs->f_header;
+  struct template_cache_entry *tpl = (struct template_cache_entry *) pptrs->f_tpl;
+
+  if (!pptrs->f_data) return TRUE;
+
+  switch(hdr->version) {
+  case 10:
+  case 9:
+    if (entry->key.nexthop.a.family == AF_INET) {
+      if (tpl->fld[NF9_BGP_IPV4_NEXT_HOP].count) {
+        if (!OTPL_CMP_LAST(&entry->key.nexthop.a.address.ipv4,
+                           NF9_BGP_IPV4_NEXT_HOP))
+          return (FALSE | entry->key.nexthop.neg);
+      }
+    }
+    else if (entry->key.nexthop.a.family == AF_INET6) {
+      if (tpl->fld[NF9_BGP_IPV6_NEXT_HOP].count) {
+        if (!OTPL_CMP_LAST(&entry->key.nexthop.a.address.ipv6,
+                           NF9_BGP_IPV6_NEXT_HOP))
+          return (FALSE | entry->key.nexthop.neg);
+      }
+    }
+    return (TRUE ^ entry->key.nexthop.neg);
+  default:
+    return TRUE;
+  }
+}
+
 int BPDI_bgp_nexthop_handler(struct packet_ptrs *pptrs, void *unused, void *e)
 {
   struct id_entry *entry = e;
@@ -3789,6 +3841,17 @@ int PT_map_index_entries_output_handler(struct id_table_index *idx, int idx_hdlr
   if (!idx || !hash_serializer || !src_e) return TRUE;
 
   hash_serial_append(hash_serializer, (char *)&src_e->key.output.n, sizeof(u_int32_t), TRUE);
+
+  return FALSE;
+}
+
+int PT_map_index_entries_nexthop_handler(struct id_table_index *idx, int idx_hdlr_no, pm_hash_serial_t *hash_serializer, void *src)
+{
+  struct id_entry *src_e = (struct id_entry *) src;
+
+  if (!idx || !hash_serializer || !src_e) return TRUE;
+
+  hash_serial_append(hash_serializer, (char *)&src_e->key.nexthop.a, sizeof(struct host_addr), TRUE);
 
   return FALSE;
 }
@@ -4346,6 +4409,40 @@ int PT_map_index_fdata_bgp_nexthop_handler(struct id_table_index *idx, int idx_h
 
   hash_serial_append(hash_serializer, (char *)&e->key.bgp_nexthop.a, sizeof(struct host_addr), FALSE);
 
+  return FALSE;
+}
+
+int PT_map_index_fdata_BPDI_nexthop_handler(struct id_table_index *idx, int idx_hdlr, int idx_netmask, struct id_entry *e, pm_hash_serial_t *hash_serializer, void *src)
+{     
+  struct packet_ptrs *pptrs = (struct packet_ptrs *) src;
+  struct struct_header_v5 *hdr = (struct struct_header_v5 *) pptrs->f_header;
+  struct template_cache_entry *tpl = (struct template_cache_entry *) pptrs->f_tpl;
+
+  if (config.acct_type == ACCT_NF) {
+    switch(hdr->version) {
+    case 10: 
+    case 9:
+      if (pptrs->l3_proto == ETHERTYPE_IP) {
+        if (tpl->fld[NF9_BGP_IPV4_NEXT_HOP].count) {
+          OTPL_CP_LAST_M(&e->key.nexthop.a.address.ipv4,
+			 NF9_BGP_IPV4_NEXT_HOP, 4);
+	  e->key.nexthop.a.family = AF_INET;
+        }
+      }
+      else if (pptrs->l3_proto == ETHERTYPE_IPV6) {
+        if (tpl->fld[NF9_BGP_IPV6_NEXT_HOP].count) {
+          OTPL_CP_LAST(&e->key.nexthop.a.address.ipv6,
+                             NF9_BGP_IPV6_NEXT_HOP, 16);
+	  e->key.nexthop.a.family = AF_INET6;
+        }
+      }
+    default:
+      return TRUE;
+    }
+  }
+
+  hash_serial_append(hash_serializer, (char *)&e->key.nexthop.a, sizeof(struct host_addr), FALSE);
+  
   return FALSE;
 }
 

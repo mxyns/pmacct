@@ -712,15 +712,16 @@ struct bgp_peer *bgp_lookup_find_bgp_peer(struct sockaddr *sa, struct xflow_stat
 int bgp_lookup_node_match_cmp_bgp(struct bgp_info *info, struct node_match_cmp_term2 *nmct2)
 {
   int no_match = FALSE;
+  struct host_addr bpdi_peer_dst_ip = { 0 };
 
   if (info->peer == nmct2->peer) {
     /* Setting match conditions */
-    if (nmct2->safi == SAFI_MPLS_VPN) no_match++;
+    if (nmct2->safi == SAFI_MPLS_VPN) no_match += 2;
     if (nmct2->peer->cap_add_paths.cap[nmct2->afi][nmct2->safi] && nmct2->peer_dst_ip) no_match++;
 
     /* Checking match conditions */
     if (nmct2->safi == SAFI_MPLS_VPN) {
-      if (info->attr_extra && !memcmp(&info->attr_extra->rd, nmct2->rd, sizeof(rd_t))) no_match--;
+      if (info->attr_extra && !memcmp(&info->attr_extra->rd, nmct2->rd, sizeof(rd_t))) no_match -= 2;
     }
 
     if (nmct2->peer->cap_add_paths.cap[nmct2->afi][nmct2->safi]) {
@@ -730,7 +731,6 @@ int bgp_lookup_node_match_cmp_bgp(struct bgp_info *info, struct node_match_cmp_t
 	    no_match--;
 	  }
           else if (nmct2->bpdi_table) {
-	    struct host_addr bpdi_peer_dst_ip = { 0 };
 	    bpdi_pptrs.bgp_dst_info = (char *) info;
 	    if (BPDI_find_id((struct id_table *)nmct2->bpdi_table, &bpdi_pptrs, &bpdi_peer_dst_ip)) { 
 	      if (!host_addr_cmp(&bpdi_peer_dst_ip, nmct2->peer_dst_ip)) {
@@ -744,7 +744,6 @@ int bgp_lookup_node_match_cmp_bgp(struct bgp_info *info, struct node_match_cmp_t
 	    no_match--;
 	  }
           else if (nmct2->bpdi_table) {
-	    struct host_addr bpdi_peer_dst_ip = { 0 };
 	    bpdi_pptrs.bgp_dst_info = (char *) info;
 	    if (BPDI_find_id((struct id_table *)nmct2->bpdi_table, &bpdi_pptrs, &bpdi_peer_dst_ip)) { 
 	      if (bpdi_peer_dst_ip.family == AF_INET) {
@@ -758,7 +757,9 @@ int bgp_lookup_node_match_cmp_bgp(struct bgp_info *info, struct node_match_cmp_t
       }
     }
 
-    if (!no_match) return FALSE;
+    if (!no_match) {
+      return FALSE;
+    }
   }
 
   return TRUE;
