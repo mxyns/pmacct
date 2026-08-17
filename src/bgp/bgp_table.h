@@ -102,6 +102,7 @@ struct node_match_cmp_term2 {
   /* mainly used for ADD-PATH purposes */
   struct host_addr *peer_dst_ip;
   u_char *bpdi_table;
+  u_char *f_header;
 
   /* mainly used for RPKI purposes */
   struct prefix *p;

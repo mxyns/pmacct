@@ -547,7 +547,7 @@ void load_id_file(int acct_type, char *filename, struct id_table *t, struct plug
                         config.name, config.type, filename, tot_lines);
               }
               else if (acct_type == MAP_BGP_PEER_DST_IP) {
-                if (!err && tmp.e[tmp.num].key.bgp_nexthop.a.family) {
+                if (!err && (tmp.e[tmp.num].key.bgp_nexthop.a.family || tmp.e[tmp.num].key.nexthop.a.family)) {
                   int j;
 
                   for (j = 0; tmp.e[tmp.num].func[j]; j++);
