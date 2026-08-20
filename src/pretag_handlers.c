@@ -2221,16 +2221,13 @@ int pretag_peer_src_as_handler(struct packet_ptrs *pptrs, void *unused, void *e)
 int pretag_peer_dst_as_handler(struct packet_ptrs *pptrs, void *unused, void *e)
 {
   struct id_entry *entry = e;
-  struct bgp_node *dst_ret = (struct bgp_node *) pptrs->bgp_dst;
   struct bgp_info *info;
   as_t asn = 0;
 
-  if (dst_ret) {
-    info = (struct bgp_info *) pptrs->bgp_dst_info;
-    if (info && info->attr) {
-      if (info->attr->aspath && info->attr->aspath->str) {
-        asn = evaluate_first_asn(info->attr->aspath->str);
-      }
+  info = (struct bgp_info *) pptrs->bgp_dst_info;
+  if (info && info->attr) {
+    if (info->attr->aspath && info->attr->aspath->str) {
+      asn = evaluate_first_asn(info->attr->aspath->str);
     }
   }
 
@@ -4436,6 +4433,7 @@ int PT_map_index_fdata_BPDI_nexthop_handler(struct id_table_index *idx, int idx_
 	  e->key.nexthop.a.family = AF_INET6;
         }
       }
+      break;
     default:
       return TRUE;
     }
@@ -4637,16 +4635,15 @@ int PT_map_index_fdata_peer_dst_as_handler(struct id_table_index *idx, int idx_h
   struct template_cache_entry *tpl = (struct template_cache_entry *) pptrs->f_tpl;
   SFSample *sample = (SFSample *) pptrs->f_data;
 
-  struct bgp_node *dst_ret = (struct bgp_node *) pptrs->bgp_dst;
   struct bgp_info *info;
 
-  if (dst_ret && evaluate_lm_method(pptrs, FALSE, config.nfacctd_as, NF_AS_BGP)) {
+  if (evaluate_lm_method(pptrs, TRUE, config.nfacctd_as, NF_AS_BGP)) {
     info = (struct bgp_info *) pptrs->bgp_dst_info;
     if (info && info->attr && info->attr->aspath) {
       e->key.peer_dst_as.n = evaluate_first_asn(info->attr->aspath->str);
     }
   }
-  else if (evaluate_lm_method(pptrs, FALSE, config.nfacctd_as, NF_AS_KEEP)) {
+  else if (evaluate_lm_method(pptrs, TRUE, config.nfacctd_as, NF_AS_KEEP)) {
     if (config.acct_type == ACCT_NF) {
       u_int16_t asn16 = 0;
       u_int32_t asn32 = 0;

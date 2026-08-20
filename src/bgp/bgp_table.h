@@ -103,6 +103,9 @@ struct node_match_cmp_term2 {
   struct host_addr *peer_dst_ip;
   u_char *bpdi_table;
   u_char *f_header;
+  u_char *f_tpl;
+  u_char *f_data;
+  u_int16_t l3_proto;
 
   /* mainly used for RPKI purposes */
   struct prefix *p;
