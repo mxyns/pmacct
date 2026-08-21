@@ -28,8 +28,6 @@
 #include "pmbgpd.h"
 #include "rpki/rpki.h"
 
-struct packet_ptrs bpdi_pptrs; 
-
 void bgp_srcdst_lookup(struct packet_ptrs *pptrs, int type, struct bgp_lookup_info *bl_info)
 {
   struct bgp_misc_structs *bms;
@@ -138,6 +136,7 @@ void bgp_srcdst_lookup(struct packet_ptrs *pptrs, int type, struct bgp_lookup_in
 	nmct2.rd = &rd;
 	nmct2.peer_dst_ip = NULL;
 	nmct2.bpdi_table = NULL;
+	nmct2.pptrs = NULL;
 
         memcpy(&pref4, &((struct pm_iphdr *)pptrs->iph_ptr)->ip_src, sizeof(struct in_addr));
 	bgp_node_match_ipv4(inter_domain_routing_db->rib[AFI_IP][safi],
@@ -168,10 +167,7 @@ void bgp_srcdst_lookup(struct packet_ptrs *pptrs, int type, struct bgp_lookup_in
         nmct2.rd = &rd;
         nmct2.peer_dst_ip = &peer_dst_ip;
         nmct2.bpdi_table = pptrs->bpdi_table;
-        nmct2.f_header = pptrs->f_header;
-        nmct2.f_tpl = pptrs->f_tpl;
-        nmct2.f_data = pptrs->f_data;
-        nmct2.l3_proto = pptrs->l3_proto;
+	nmct2.pptrs = pptrs;
 
 	memcpy(&pref4, &((struct pm_iphdr *)pptrs->iph_ptr)->ip_dst, sizeof(struct in_addr));
 	bgp_node_match_ipv4(inter_domain_routing_db->rib[AFI_IP][safi],
@@ -206,6 +202,7 @@ void bgp_srcdst_lookup(struct packet_ptrs *pptrs, int type, struct bgp_lookup_in
           nmct2.rd = &rd;
           nmct2.peer_dst_ip = NULL;
           nmct2.bpdi_table = NULL;
+          nmct2.pptrs = NULL;
 
           memcpy(&pref4, &bl_info->inner_ip_src, sizeof(struct in_addr));
           bgp_node_match_ipv4(inter_domain_routing_db->rib[AFI_IP][safi],
@@ -236,10 +233,7 @@ void bgp_srcdst_lookup(struct packet_ptrs *pptrs, int type, struct bgp_lookup_in
           nmct2.rd = &rd;
           nmct2.peer_dst_ip = &peer_dst_ip;
           nmct2.bpdi_table = pptrs->bpdi_table;
-          nmct2.f_header = pptrs->f_header;
-          nmct2.f_tpl = pptrs->f_tpl;
-          nmct2.f_data = pptrs->f_data;
-          nmct2.l3_proto = pptrs->l3_proto;
+          nmct2.pptrs = pptrs;
 
           memcpy(&pref4, &bl_info->inner_ip_dst, sizeof(struct in_addr));
           bgp_node_match_ipv4(inter_domain_routing_db->rib[AFI_IP][safi],
@@ -273,6 +267,7 @@ void bgp_srcdst_lookup(struct packet_ptrs *pptrs, int type, struct bgp_lookup_in
           nmct2.rd = &rd;
           nmct2.peer_dst_ip = NULL;
           nmct2.bpdi_table = NULL;
+          nmct2.pptrs = NULL;
 
           memcpy(&pref6, &bl_info->inner_ipv6_src, sizeof(struct in6_addr));
           bgp_node_match_ipv6(inter_domain_routing_db->rib[AFI_IP6][safi],
@@ -303,10 +298,7 @@ void bgp_srcdst_lookup(struct packet_ptrs *pptrs, int type, struct bgp_lookup_in
           nmct2.rd = &rd;
           nmct2.peer_dst_ip = &peer_dst_ip;
           nmct2.bpdi_table = pptrs->bpdi_table;
-          nmct2.f_header = pptrs->f_header;
-          nmct2.f_tpl = pptrs->f_tpl;
-          nmct2.f_data = pptrs->f_data;
-          nmct2.l3_proto = pptrs->l3_proto;
+          nmct2.pptrs = pptrs;
 
           memcpy(&pref6, &bl_info->inner_ipv6_dst, sizeof(struct in6_addr));
           bgp_node_match_ipv6(inter_domain_routing_db->rib[AFI_IP6][safi],
@@ -340,6 +332,7 @@ void bgp_srcdst_lookup(struct packet_ptrs *pptrs, int type, struct bgp_lookup_in
           nmct2.rd = &rd;
           nmct2.peer_dst_ip = NULL;
           nmct2.bpdi_table = NULL;
+          nmct2.pptrs = NULL;
 
           memcpy(&pref6, &((struct ip6_hdr *)pptrs->iph_ptr)->ip6_src, sizeof(struct in6_addr));
           bgp_node_match_ipv6(inter_domain_routing_db->rib[AFI_IP6][safi],
@@ -370,10 +363,7 @@ void bgp_srcdst_lookup(struct packet_ptrs *pptrs, int type, struct bgp_lookup_in
           nmct2.rd = &rd;
           nmct2.peer_dst_ip = &peer_dst_ip;
           nmct2.bpdi_table = pptrs->bpdi_table;
-          nmct2.f_header = pptrs->f_header;
-          nmct2.f_tpl = pptrs->f_tpl;
-          nmct2.f_data = pptrs->f_data;
-          nmct2.l3_proto = pptrs->l3_proto;
+          nmct2.pptrs = pptrs;
 
           memcpy(&pref6, &((struct ip6_hdr *)pptrs->iph_ptr)->ip6_dst, sizeof(struct in6_addr));
           bgp_node_match_ipv6(inter_domain_routing_db->rib[AFI_IP6][safi],
@@ -563,10 +553,7 @@ void bgp_follow_nexthop_lookup(struct packet_ptrs *pptrs, int type)
       nmct2.rd = &rd;
       nmct2.peer_dst_ip = &peer_dst_ip;
       nmct2.bpdi_table = pptrs->bpdi_table;
-      nmct2.f_header = pptrs->f_header;
-      nmct2.f_tpl = pptrs->f_tpl;
-      nmct2.f_data = pptrs->f_data;
-      nmct2.l3_proto = pptrs->l3_proto;
+      nmct2.pptrs = pptrs;
 
       if (pptrs->l3_proto == ETHERTYPE_IP) {
         memcpy(&pref4, &((struct pm_iphdr *)pptrs->iph_ptr)->ip_dst, sizeof(struct in_addr));
@@ -734,6 +721,10 @@ int bgp_lookup_node_match_cmp_bgp(struct bgp_info *info, struct node_match_cmp_t
   int no_match = FALSE;
   struct host_addr bpdi_peer_dst_ip = { 0 };
 
+  if (nmct2->pptrs) {
+    memset(&nmct2->pptrs->bpdi_peer_dst_ip, 0, sizeof(struct host_addr));
+  }
+
   if (info->peer == nmct2->peer) {
     /* Setting match conditions */
     if (nmct2->safi == SAFI_MPLS_VPN) no_match += 2;
@@ -751,18 +742,14 @@ int bgp_lookup_node_match_cmp_bgp(struct bgp_info *info, struct node_match_cmp_t
 	    no_match--;
 	  }
           else if (nmct2->bpdi_table) {
-	    bpdi_pptrs.bgp_dst_info = (char *) info;
-	    bpdi_pptrs.f_header = nmct2->f_header;
-	    bpdi_pptrs.f_tpl = nmct2->f_tpl;
-	    bpdi_pptrs.f_data = nmct2->f_data;
-	    bpdi_pptrs.l3_proto = nmct2->l3_proto;
-	    bpdi_pptrs.lm_method_dst = NF_AS_BGP;
-
-	    if (BPDI_find_id((struct id_table *)nmct2->bpdi_table, &bpdi_pptrs, &bpdi_peer_dst_ip)) { 
+	    nmct2->pptrs->bgp_dst_info = (char *) info;
+	    if (BPDI_find_id((struct id_table *)nmct2->bpdi_table, nmct2->pptrs, &bpdi_peer_dst_ip)) { 
 	      if (!host_addr_cmp(&bpdi_peer_dst_ip, nmct2->peer_dst_ip)) {
+		memcpy(&nmct2->pptrs->bpdi_peer_dst_ip, &bpdi_peer_dst_ip, sizeof(struct host_addr));
 		no_match--;
 	      }
 	    }
+	    nmct2->pptrs->bgp_dst_info = NULL;
           }
 	}
 	else if (info->attr->nexthop.s_addr && nmct2->peer_dst_ip->family == AF_INET) {
@@ -770,20 +757,16 @@ int bgp_lookup_node_match_cmp_bgp(struct bgp_info *info, struct node_match_cmp_t
 	    no_match--;
 	  }
           else if (nmct2->bpdi_table) {
-	    bpdi_pptrs.bgp_dst_info = (char *) info;
-	    bpdi_pptrs.f_header = nmct2->f_header;
-	    bpdi_pptrs.f_tpl = nmct2->f_tpl;
-	    bpdi_pptrs.f_data = nmct2->f_data;
-	    bpdi_pptrs.l3_proto = nmct2->l3_proto;
-	    bpdi_pptrs.lm_method_dst = NF_AS_BGP;
-
-	    if (BPDI_find_id((struct id_table *)nmct2->bpdi_table, &bpdi_pptrs, &bpdi_peer_dst_ip)) { 
+	    nmct2->pptrs->bgp_dst_info = (char *) info;
+	    if (BPDI_find_id((struct id_table *)nmct2->bpdi_table, nmct2->pptrs, &bpdi_peer_dst_ip)) {
 	      if (bpdi_peer_dst_ip.family == AF_INET) {
 		if (bpdi_peer_dst_ip.address.ipv4.s_addr == nmct2->peer_dst_ip->address.ipv4.s_addr) {
+		  memcpy(&nmct2->pptrs->bpdi_peer_dst_ip, &bpdi_peer_dst_ip, sizeof(struct host_addr));
 		  no_match--;
 		}
 	      }
 	    }
+	    nmct2->pptrs->bgp_dst_info = NULL;
           }
 	}
       }

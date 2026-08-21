@@ -2104,31 +2104,38 @@ int BTA_find_id(struct id_table *t, struct packet_ptrs *pptrs, pm_id_t *tag, pm_
 
 int BPDI_find_id(struct id_table *t, struct packet_ptrs *pptrs, struct host_addr *bpdi_peer_dst_ip)
 {
-  struct sockaddr bpdi_f_agent = { 0 };
+  struct sockaddr bpdi_f_agent = { 0 }, *saved_f_agent = NULL;
+  u_int8_t saved_lm_method_dst = 0; 
+  pm_id_t ret_bpdi = 0, ret_bpdi2 = 0;
+  u_int16_t bpdi_af;
   int ret = 0;
 
-  pptrs->bpdi_af = 0;
-  pptrs->bpdi = 0;
-  pptrs->bpdi2 = 0;
   bpdi_f_agent.sa_family = AF_INET;
+  saved_f_agent = (struct sockaddr *) pptrs->f_agent;
   pptrs->f_agent = (u_char *) &bpdi_f_agent;
 
+  saved_lm_method_dst = pptrs->lm_method_dst;
+  pptrs->lm_method_dst = NF_AS_BGP;
+
   if (find_id_func) {
-    ret = find_id_func(t, pptrs, &pptrs->bpdi, &pptrs->bpdi2);
+    ret = find_id_func(t, pptrs, &ret_bpdi, &ret_bpdi2);
   }
 
-  if (ret & PRETAG_MAP_RCODE_ID) pptrs->bpdi_af = ETHERTYPE_IP;
-  else if (ret & BTA_MAP_RCODE_ID_ID2) pptrs->bpdi_af = ETHERTYPE_IPV6;
+  if (ret & PRETAG_MAP_RCODE_ID) bpdi_af = ETHERTYPE_IP;
+  else if (ret & BTA_MAP_RCODE_ID_ID2) bpdi_af = ETHERTYPE_IPV6;
 
-  if (pptrs->bpdi_af == ETHERTYPE_IP) {
+  if (bpdi_af == ETHERTYPE_IP) {
     bpdi_peer_dst_ip->family = AF_INET;
-    bpdi_peer_dst_ip->address.ipv4.s_addr = pptrs->bpdi;
+    bpdi_peer_dst_ip->address.ipv4.s_addr = ret_bpdi;
   }
-  else if (pptrs->bpdi_af == ETHERTYPE_IPV6) {
+  else if (bpdi_af == ETHERTYPE_IPV6) {
     bpdi_peer_dst_ip->family = AF_INET6;
-    ip6_addr_32bit_cpy(&bpdi_peer_dst_ip->address.ipv6, &pptrs->bpdi, 0, 0, 1);
-    ip6_addr_32bit_cpy(&bpdi_peer_dst_ip->address.ipv6, &pptrs->bpdi2, 2, 0, 1);
+    ip6_addr_32bit_cpy(&bpdi_peer_dst_ip->address.ipv6, &ret_bpdi, 0, 0, 1);
+    ip6_addr_32bit_cpy(&bpdi_peer_dst_ip->address.ipv6, &ret_bpdi2, 2, 0, 1);
   }
+
+  pptrs->f_agent = (char *) saved_f_agent;
+  pptrs->lm_method_dst = saved_lm_method_dst;
 
   return ret;
 }

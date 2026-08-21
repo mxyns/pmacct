@@ -58,5 +58,5 @@ extern void bgp_lg_rep_ipl_data_add(struct bgp_lg_rep *, afi_t, safi_t, struct p
 extern void bgp_lg_rep_gp_data_add(struct bgp_lg_rep *, struct bgp_peer *);
 
 /* global variables */
-extern struct packet_ptrs bpdi_pptrs;
+
 #endif 
