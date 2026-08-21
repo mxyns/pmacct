@@ -719,11 +719,6 @@ struct bgp_peer *bgp_lookup_find_bgp_peer(struct sockaddr *sa, struct xflow_stat
 int bgp_lookup_node_match_cmp_bgp(struct bgp_info *info, struct node_match_cmp_term2 *nmct2)
 {
   int no_match = FALSE;
-  struct host_addr bpdi_peer_dst_ip = { 0 };
-
-  if (nmct2->pptrs) {
-    memset(&nmct2->pptrs->bpdi_peer_dst_ip, 0, sizeof(struct host_addr));
-  }
 
   if (info->peer == nmct2->peer) {
     /* Setting match conditions */
@@ -741,35 +736,24 @@ int bgp_lookup_node_match_cmp_bgp(struct bgp_info *info, struct node_match_cmp_t
 	  if (!host_addr_cmp(&info->attr->mp_nexthop, nmct2->peer_dst_ip)) {
 	    no_match--;
 	  }
-          else if (nmct2->bpdi_table) {
-	    nmct2->pptrs->bgp_dst_info = (char *) info;
-	    if (BPDI_find_id((struct id_table *)nmct2->bpdi_table, nmct2->pptrs, &bpdi_peer_dst_ip)) { 
-	      if (!host_addr_cmp(&bpdi_peer_dst_ip, nmct2->peer_dst_ip)) {
-		memcpy(&nmct2->pptrs->bpdi_peer_dst_ip, &bpdi_peer_dst_ip, sizeof(struct host_addr));
-		no_match--;
-	      }
-	    }
-	    nmct2->pptrs->bgp_dst_info = NULL;
-          }
 	}
 	else if (info->attr->nexthop.s_addr && nmct2->peer_dst_ip->family == AF_INET) {
 	  if (info->attr->nexthop.s_addr == nmct2->peer_dst_ip->address.ipv4.s_addr) {
 	    no_match--;
 	  }
-          else if (nmct2->bpdi_table) {
-	    nmct2->pptrs->bgp_dst_info = (char *) info;
-	    if (BPDI_find_id((struct id_table *)nmct2->bpdi_table, nmct2->pptrs, &bpdi_peer_dst_ip)) {
-	      if (bpdi_peer_dst_ip.family == AF_INET) {
-		if (bpdi_peer_dst_ip.address.ipv4.s_addr == nmct2->peer_dst_ip->address.ipv4.s_addr) {
-		  memcpy(&nmct2->pptrs->bpdi_peer_dst_ip, &bpdi_peer_dst_ip, sizeof(struct host_addr));
-		  no_match--;
-		}
-	      }
-	    }
-	    nmct2->pptrs->bgp_dst_info = NULL;
-          }
 	}
       }
+    }
+
+    if (nmct2->bpdi_table && nmct2->pptrs) {
+      memset(&nmct2->pptrs->bpdi_peer_dst_ip, 0, sizeof(struct host_addr));
+      nmct2->pptrs->bgp_dst_info = (char *) info;
+      if (BPDI_find_id((struct id_table *)nmct2->bpdi_table, nmct2->pptrs, &nmct2->pptrs->bpdi_peer_dst_ip)) {
+	if (nmct2->peer->cap_add_paths.cap[nmct2->afi][nmct2->safi]) {
+	  no_match--;
+	}
+      }
+      nmct2->pptrs->bgp_dst_info = NULL;
     }
 
     if (!no_match) {

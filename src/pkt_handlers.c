@@ -1460,10 +1460,18 @@ void bgp_peer_dst_ip_handler(struct channels_list_entry *chptr, struct packet_pt
   /* check network-related primitives against fallback scenarios */
   if (!evaluate_lm_method(pptrs, TRUE, chptr->plugin->cfg.nfacctd_net, NF_NET_BGP)) return;
 
-  if (pptrs->bgp_nexthop_info)
-    nh_info = (struct bgp_info *) pptrs->bgp_nexthop_info;
-  else if (pptrs->bgp_dst_info)
-    nh_info = (struct bgp_info *) pptrs->bgp_dst_info;
+  /* bgp_peer_dst_ip map result overrides any other peer_dst_ip value */
+  if (pptrs->bpdi_table && pptrs->bpdi_peer_dst_ip.family) {
+    memcpy(&pbgp->peer_dst_ip, &pptrs->bpdi_peer_dst_ip, sizeof(struct host_addr));
+  }
+  else {
+    if (pptrs->bgp_nexthop_info) {
+      nh_info = (struct bgp_info *) pptrs->bgp_nexthop_info;
+    }
+    else if (pptrs->bgp_dst_info) {
+      nh_info = (struct bgp_info *) pptrs->bgp_dst_info;
+    }
+  }
 
   if (nh_info && nh_info->attr) {
     if (nh_info->attr->mp_nexthop.family == AF_INET) {
