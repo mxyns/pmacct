@@ -2134,7 +2134,7 @@ int BPDI_find_id(struct id_table *t, struct packet_ptrs *pptrs, struct host_addr
     ip6_addr_32bit_cpy(&bpdi_peer_dst_ip->address.ipv6, &ret_bpdi2, 2, 0, 1);
   }
 
-  pptrs->f_agent = (char *) saved_f_agent;
+  pptrs->f_agent = (u_char *) saved_f_agent;
   pptrs->lm_method_dst = saved_lm_method_dst;
 
   return ret;
