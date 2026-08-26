@@ -1,6 +1,6 @@
 /*
     pmacct (Promiscuous mode IP Accounting package)
-    pmacct is Copyright (C) 2003-2025 by Paolo Lucente
+    pmacct is Copyright (C) 2003-2026 by Paolo Lucente
 */
 
 /*
@@ -123,6 +123,7 @@
 #define NF9_EXPORTER_IPV4_ADDRESS       130
 #define NF9_EXPORTER_IPV6_ADDRESS       131
 /* ... */
+#define NF9_ICMPV6_TYPE			139
 #define NF9_MPLS_TOP_LABEL_IPV6_ADDR    140
 /* ... */
 #define NF9_FIRST_SWITCHED_SEC          150

@@ -3041,21 +3041,42 @@ void NF_dst_port_handler(struct channels_list_entry *chptr, struct packet_ptrs *
   switch(hdr->version) {
   case 10:
   case 9:
-    if (pptrs->flow_type.traffic_type == PM_FTYPE_SRV6)
+    if (pptrs->flow_type.traffic_type == PM_FTYPE_SRV6) {
       break;
-    if (OTPL_LAST_LEN(NF9_L4_PROTOCOL) == 1)
+    }
+
+    if (OTPL_LAST_LEN(NF9_L4_PROTOCOL) == 1) {
       OTPL_CP_LAST(&l4_proto, NF9_L4_PROTOCOL);
-    if (tpl->fld[NF9_L4_DST_PORT].count)
+    }
+
+    if (tpl->fld[NF9_L4_DST_PORT].count) {
       OTPL_CP_LAST_M(&pdata->primitives.dst_port, NF9_L4_DST_PORT, 2);
-    else if (tpl->fld[NF9_UDP_DST_PORT].count)
+    }
+    else if (tpl->fld[NF9_UDP_DST_PORT].count) {
       OTPL_CP_LAST_M(&pdata->primitives.dst_port, NF9_UDP_DST_PORT, 2);
-    else if (tpl->fld[NF9_TCP_DST_PORT].count)
+    }
+    else if (tpl->fld[NF9_TCP_DST_PORT].count) {
       OTPL_CP_LAST_M(&pdata->primitives.dst_port, NF9_TCP_DST_PORT, 2);
+    }
     else if (tpl->fld[NF9_DATALINK_FRAME_SECTION].count ||
              tpl->fld[NF9_LAYER2_PKT_SECTION_DATA].count) {
       dst_port_handler(chptr, pptrs, data);
       break;
     }
+
+    if (!pdata->primitives.dst_port) {
+      if (l4_proto == IPPROTO_ICMP) {
+        if (tpl->fld[NF9_ICMP_TYPE].count) {
+          OTPL_CP_LAST_M(&pdata->primitives.dst_port, NF9_ICMP_TYPE, 2);
+	}
+      }
+      else if (l4_proto == IPPROTO_ICMPV6) {
+        if (tpl->fld[NF9_ICMPV6_TYPE].count) {
+          OTPL_CP_LAST_M(&pdata->primitives.dst_port, NF9_ICMPV6_TYPE, 2);
+	}
+      }
+    }
+
     pdata->primitives.dst_port = ntohs(pdata->primitives.dst_port);
     break;
   case 5:
