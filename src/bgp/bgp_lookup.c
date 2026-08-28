@@ -722,12 +722,19 @@ int bgp_lookup_node_match_cmp_bgp(struct bgp_info *info, struct node_match_cmp_t
 
   if (info->peer == nmct2->peer) {
     /* Setting match conditions */
-    if (nmct2->safi == SAFI_MPLS_VPN) no_match += 2;
-    if (nmct2->peer->cap_add_paths.cap[nmct2->afi][nmct2->safi] && nmct2->peer_dst_ip) no_match++;
+    if (nmct2->safi == SAFI_MPLS_VPN) {
+      no_match += BGP_LOOKUP_MATCH_RD;
+    }
+
+    if (nmct2->peer->cap_add_paths.cap[nmct2->afi][nmct2->safi] && nmct2->peer_dst_ip) {
+      no_match += BGP_LOOKUP_MATCH_NH;
+    }
 
     /* Checking match conditions */
     if (nmct2->safi == SAFI_MPLS_VPN) {
-      if (info->attr_extra && !memcmp(&info->attr_extra->rd, nmct2->rd, sizeof(rd_t))) no_match -= 2;
+      if (info->attr_extra && !memcmp(&info->attr_extra->rd, nmct2->rd, sizeof(rd_t))) {
+	no_match -= BGP_LOOKUP_MATCH_RD;
+      }
     }
 
     if (nmct2->peer->cap_add_paths.cap[nmct2->afi][nmct2->safi]) {
@@ -739,7 +746,7 @@ int bgp_lookup_node_match_cmp_bgp(struct bgp_info *info, struct node_match_cmp_t
 	}
 	else if (info->attr->nexthop.s_addr && nmct2->peer_dst_ip->family == AF_INET) {
 	  if (info->attr->nexthop.s_addr == nmct2->peer_dst_ip->address.ipv4.s_addr) {
-	    no_match--;
+	    no_match -= BGP_LOOKUP_MATCH_NH;
 	  }
 	}
       }
@@ -747,13 +754,18 @@ int bgp_lookup_node_match_cmp_bgp(struct bgp_info *info, struct node_match_cmp_t
 
     if (nmct2->bpdi_table && nmct2->pptrs) {
       memset(&nmct2->pptrs->bpdi_peer_dst_ip, 0, sizeof(struct host_addr));
-      nmct2->pptrs->bgp_dst_info = (char *) info;
-      if (BPDI_find_id((struct id_table *)nmct2->bpdi_table, nmct2->pptrs, &nmct2->pptrs->bpdi_peer_dst_ip)) {
-	if (nmct2->peer->cap_add_paths.cap[nmct2->afi][nmct2->safi]) {
-	  no_match--;
-	}
+
+      if (no_match == BGP_LOOKUP_MATCH_NH) { 
+        nmct2->pptrs->bgp_dst_info = (char *) info;
+        if (BPDI_find_id((struct id_table *)nmct2->bpdi_table, nmct2->pptrs, &nmct2->pptrs->bpdi_peer_dst_ip)) {
+	  if (nmct2->peer->cap_add_paths.cap[nmct2->afi][nmct2->safi]) {
+	    if (no_match == BGP_LOOKUP_MATCH_NH) {
+	      no_match -= BGP_LOOKUP_MATCH_NH;
+	    }
+	  }
+        }
+        nmct2->pptrs->bgp_dst_info = NULL;
       }
-      nmct2->pptrs->bgp_dst_info = NULL;
     }
 
     if (!no_match) {

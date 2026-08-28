@@ -1471,20 +1471,20 @@ void bgp_peer_dst_ip_handler(struct channels_list_entry *chptr, struct packet_pt
     else if (pptrs->bgp_dst_info) {
       nh_info = (struct bgp_info *) pptrs->bgp_dst_info;
     }
-  }
 
-  if (nh_info && nh_info->attr) {
-    if (nh_info->attr->mp_nexthop.family == AF_INET) {
-      pbgp->peer_dst_ip.family = AF_INET;
-      memcpy(&pbgp->peer_dst_ip.address.ipv4, &nh_info->attr->mp_nexthop.address.ipv4, 4);
-    }
-    else if (nh_info->attr->mp_nexthop.family == AF_INET6) {
-      pbgp->peer_dst_ip.family = AF_INET6;
-      memcpy(&pbgp->peer_dst_ip.address.ipv6, &nh_info->attr->mp_nexthop.address.ipv6, 16);
-    }
-    else {
-      pbgp->peer_dst_ip.family = AF_INET;
-      pbgp->peer_dst_ip.address.ipv4.s_addr = nh_info->attr->nexthop.s_addr;
+    if (nh_info && nh_info->attr) {
+      if (nh_info->attr->mp_nexthop.family == AF_INET) {
+        pbgp->peer_dst_ip.family = AF_INET;
+        memcpy(&pbgp->peer_dst_ip.address.ipv4, &nh_info->attr->mp_nexthop.address.ipv4, 4);
+      }
+      else if (nh_info->attr->mp_nexthop.family == AF_INET6) {
+        pbgp->peer_dst_ip.family = AF_INET6;
+        memcpy(&pbgp->peer_dst_ip.address.ipv6, &nh_info->attr->mp_nexthop.address.ipv6, 16);
+      }
+      else {
+        pbgp->peer_dst_ip.family = AF_INET;
+        pbgp->peer_dst_ip.address.ipv4.s_addr = nh_info->attr->nexthop.s_addr;
+      }
     }
   }
 }

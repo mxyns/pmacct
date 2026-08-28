@@ -2107,7 +2107,7 @@ int BPDI_find_id(struct id_table *t, struct packet_ptrs *pptrs, struct host_addr
   struct sockaddr bpdi_f_agent = { 0 }, *saved_f_agent = NULL;
   u_int8_t saved_lm_method_dst = 0; 
   pm_id_t ret_bpdi = 0, ret_bpdi2 = 0;
-  u_int16_t bpdi_af;
+  u_int16_t bpdi_af = 0;
   int ret = 0;
 
   bpdi_f_agent.sa_family = AF_INET;
