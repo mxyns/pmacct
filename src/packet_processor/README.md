@@ -12,7 +12,7 @@ With a compatible library providing functions with the signatures described in `
 
 The dynamic library is loaded at run time and stops execution during initial configuration if its loading causes an error (incorrect path, missing symbols).
 
-its configuration key is `custom_packet_parsing_lib:{path to the dynamic library}`
+Its configuration key is `packet_processor_library: {path to the dynamic library}`.
 
 ### Implementation
 

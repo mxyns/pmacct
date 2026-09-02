@@ -84,7 +84,7 @@ def edit_config_with_framework_params(config: KConfigurationFile, params: KModul
     config.replace_value_of_key_ending_with('kafka_avro_schema_registry', 'http://schema-registry:8081')
     config.replace_value_of_key('redis_host', '172.21.1.14:6379')
     if params.packet_processor is not None:
-        config.data["custom_packet_parsing_lib"] = {'':"/usr/local/lib/libparse.so"}
+        config.data["packet_processor_library"] = {'':"/usr/local/lib/libparse.so"}
 
 
 # Copy existing files in pmacct_mount to result (=actual) mounted folder
