@@ -23,17 +23,17 @@
 #include <time.h>
 #include "dynlib/dynamic_loading.h"
 
-typedef int (* bgp_parse_msg_f) (struct bgp_peer *peer, time_t time, int online);
-typedef u_int32_t (* bmp_process_packet_f) (char * buf, u_int32_t buf_len, struct bmp_peer *peer, int *term);
-typedef int (* bmp_peer_init_f) (struct bmp_peer *peer, int func_type);
-typedef void (* bmp_peer_close_f) (struct bmp_peer *peer, int func_type);
+typedef int (*bgp_parse_msg_f)(struct bgp_peer *peer, time_t time, int online);
+typedef u_int32_t (*bmp_process_packet_f)(char *buf, u_int32_t buf_len, struct bmp_peer *peer, int *term);
+typedef int (*bmp_peer_init_f)(struct bmp_peer *peer, int func_type);
+typedef void (*bmp_peer_close_f)(struct bmp_peer *peer, int func_type);
 
 /// Packet processor, set of functions called to parse a received bmp/bgp buffer
 typedef struct packet_processor {
-    bgp_parse_msg_f bgp_parse_msg;
-    bmp_process_packet_f bmp_process_packet;
-    bmp_peer_init_f bmp_peer_init;
-    bmp_peer_close_f bmp_peer_close;
+	bgp_parse_msg_f bgp_parse_msg;
+	bmp_process_packet_f bmp_process_packet;
+	bmp_peer_init_f bmp_peer_init;
+	bmp_peer_close_f bmp_peer_close;
 } packet_processor_t;
 
 /// The in-use packet processor. Should not change after config has been loaded.
