@@ -17,11 +17,7 @@ if WITH_AVRO
 AM_LDFLAGS += @AVRO_LIBS@
 endif
 
-# tell the linker to put all symbols into the dynsym table
-# this makes all pmacct functions visible to dynamically loaded
-# libraries such as custom parsers that might want to call
-# some pmacct functions
-AM_LDFLAGS += -Wl,-export-dynamic
+AM_LDFLAGS += @PMACCT_EXPORT_DYNAMIC_LDFLAGS@
 
 AM_CFLAGS = $(PMACCT_CFLAGS)
 

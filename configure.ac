@@ -72,6 +72,26 @@ AC_ARG_ENABLE(so,
 )
 dnl finish: shared object handling
 
+dnl Export daemon symbols for custom packet processors by default.
+AC_MSG_CHECKING([whether to export daemon symbols])
+AC_ARG_ENABLE(export-dynamic,
+        [  --disable-export-dynamic         Do not export daemon symbols (default: no)],
+        [
+        if test x$enableval = x"yes" ; then
+          AC_MSG_RESULT(yes)
+          PMACCT_EXPORT_DYNAMIC_LDFLAGS="-Wl,--export-dynamic"
+        else
+          AC_MSG_RESULT(no)
+          PMACCT_EXPORT_DYNAMIC_LDFLAGS=""
+        fi
+        ],
+        [
+        AC_MSG_RESULT(yes)
+        PMACCT_EXPORT_DYNAMIC_LDFLAGS="-Wl,--export-dynamic"
+        ]
+)
+AC_SUBST([PMACCT_EXPORT_DYNAMIC_LDFLAGS])
+
 dnl os specific flags
 case "$host_os" in
   Sun*)
