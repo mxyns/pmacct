@@ -1351,7 +1351,7 @@ AS_IF([test x"$USING_L2" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
 #define HAVE_L2 1"])
 AC_SUBST([PMACCT_BUILD_DEFINES])
 
-PMACCT_PC_CFLAGS="-I${includedir}"
+PMACCT_PC_CFLAGS="-I${includedir} -I${includedir}/pmacct/src"
 PMACCT_PC_LIBS=""
 
 AC_SUBST([PMACCT_PC_CFLAGS])
