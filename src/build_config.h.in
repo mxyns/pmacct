@@ -1,8 +1,9 @@
-/* src/build_config.h.in.  Generated from configure.ac by autoheader.  */
+/* Generated from build_config.h.in by configure. */
 
-/* Test */
-#define WITH_KAFKA @WITH_KAFKA@
+#ifndef PMACCT_BUILD_CONFIG_H
+#define PMACCT_BUILD_CONFIG_H
 
-#define WITH_NDPI @WITH_NDPI@
+/* Keep external packet processors ABI-compatible with this pmacct build. */
+@PMACCT_BUILD_DEFINES@
 
-#define WITH_GNUTLS @WITH_GNUTLS@
+#endif /* PMACCT_BUILD_CONFIG_H */

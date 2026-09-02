@@ -12,14 +12,6 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES(yes)])
 PMACCT_VERSION=`cat $srcdir/VERSION`
 AC_SUBST(PMACCT_VERSION)
 
-AC_DEFUN([PKG_AC_DEFINE_PUBLIC], [
-  AC_DEFINE([$1], [$2], [$3])
-  PKG_CONFIG_DEFS="$PKG_CONFIG_DEFS -D$1=$2"
-])
-
-PKG_CONFIG_DEFS = ""
-AC_SUBST([PKG_CONFIG_DEFS])
-
 COMPILE_ARGS="${ac_configure_args}"
 
 dnl Determine a C compiler to use
@@ -83,14 +75,14 @@ dnl finish: shared object handling
 dnl os specific flags
 case "$host_os" in
   Sun*)
-    PKG_AC_DEFINE_PUBLIC(SOLARIS, 1, Test)
+    AC_DEFINE(SOLARIS, 1)
     LIBS="-lresolv -lsocket -lnsl ${LIBS}"
     ;;
   *BSD)
-    PKG_AC_DEFINE_PUBLIC(BSD, 1, Test)
+    AC_DEFINE(BSD, 1)
     ;;
   linux*)
-    PKG_AC_DEFINE_PUBLIC(LINUX, 1, Test)
+    AC_DEFINE(LINUX, 1)
     ;;
 esac
 
@@ -109,7 +101,7 @@ AC_MSG_CHECKING(for __progname)
 AC_LINK_IFELSE(
 	[AC_LANG_PROGRAM([ extern char *__progname; ],
 			 [ __progname = "test"; ])],
-	[AC_MSG_RESULT(yes); PKG_AC_DEFINE_PUBLIC(PROGNAME, 1, [Description])],
+	[AC_MSG_RESULT(yes); AC_DEFINE(PROGNAME, 1)],
 	[AC_MSG_RESULT(no)])
 
 dnl
@@ -138,10 +130,10 @@ if test x"$ac_cv_endianess" = x"unknown"; then
 fi
 
 if test x"$ac_cv_endianess" = x"big"; then
-  PKG_AC_DEFINE_PUBLIC(IM_BIG_ENDIAN, 1, [Description])
+  AC_DEFINE(IM_BIG_ENDIAN, 1)
 fi
 if test x"$ac_cv_endianess" = x"little"; then
-  PKG_AC_DEFINE_PUBLIC(IM_LITTLE_ENDIAN, 1, [Description])
+  AC_DEFINE(IM_LITTLE_ENDIAN, 1)
 fi
 
 dnl
@@ -202,7 +194,7 @@ EOF
 fi
 
 if test x"$ac_cv_unaligned" = x"fail"; then
-  PKG_AC_DEFINE_PUBLIC(NEED_ALIGN, 1, [Description])
+  AC_DEFINE(NEED_ALIGN, 1)
 fi
 
 AC_MSG_CHECKING([whether to enable L2 features])
@@ -211,14 +203,16 @@ AC_ARG_ENABLE(l2,
         [
                 if test x$enableval = x"yes" ; then
                         AC_MSG_RESULT(yes)
-                        PKG_AC_DEFINE_PUBLIC(HAVE_L2, 1, [Description])
+                        USING_L2="yes"
+                        AC_DEFINE(HAVE_L2, 1)
                 else
                         AC_MSG_RESULT(no)
                 fi
         ],
         [
                 AC_MSG_RESULT(yes)
-                PKG_AC_DEFINE_PUBLIC(HAVE_L2, 1, [Description])
+                USING_L2="yes"
+                AC_DEFINE(HAVE_L2, 1)
                 COMPILE_ARGS="${COMPILE_ARGS} '--enable-l2'"
         ]
 )
@@ -246,7 +240,7 @@ if test x"$PCAPINCLS" != x""; then
   AC_MSG_CHECKING(your own pcap includes)
   if test -r $PCAPINCLS/pcap.h; then
     AC_MSG_RESULT(ok)
-    PKG_AC_DEFINE_PUBLIC(HAVE_PCAP_H, 1, [Description])
+    AC_DEFINE(HAVE_PCAP_H, 1)
     PCAPINCLUDESFOUND=1
   else
     AC_MSG_RESULT(no)
@@ -261,7 +255,7 @@ if test x"$PCAPINCLUDESFOUND" = x""; then
     AC_MSG_CHECKING([using pcap-config for pcap.h])
     PCAP_CONFIG_INCLUDES=`${PCAP_CONFIG} --cflags`
     INCLUDES="${INCLUDES} ${PCAP_CONFIG_INCLUDES}"
-    PKG_AC_DEFINE_PUBLIC(HAVE_PCAP_PCAP_H, 1, [Description])
+    AC_DEFINE(HAVE_PCAP_PCAP_H, 1)
     AC_MSG_RESULT([${PCAP_CONFIG_INCLUDES}])
     PCAPINCLUDESFOUND=1
   fi
@@ -272,21 +266,21 @@ if test x"$PCAPINCLUDESFOUND" = x""; then
   if test -r /usr/include/pcap.h; then
     AC_MSG_RESULT([found in /usr/include])
     PCAPINCLUDESFOUND=1
-    PKG_AC_DEFINE_PUBLIC(HAVE_PCAP_H, 1, [Description])
+    AC_DEFINE(HAVE_PCAP_H, 1)
   elif test -r /usr/include/pcap/pcap.h; then
     AC_MSG_RESULT([found in /usr/include])
     PCAPINCLUDESFOUND=1
-    PKG_AC_DEFINE_PUBLIC(HAVE_PCAP_PCAP_H, 1, [Description])
+    AC_DEFINE(HAVE_PCAP_PCAP_H, 1)
   elif test -r /usr/local/include/pcap.h; then
     AC_MSG_RESULT([found in /usr/local/include])
     INCLUDES="${INCLUDES} -I/usr/local/include"
     PCAPINCLUDESFOUND=1
-    PKG_AC_DEFINE_PUBLIC(HAVE_PCAP_H, 1, [Description])
+    AC_DEFINE(HAVE_PCAP_H, 1)
   elif test -r /usr/local/include/pcap/pcap.h; then
     AC_MSG_RESULT([found in /usr/local/include])
     INCLUDES="${INCLUDES} -I/usr/local/include"
     PCAPINCLUDESFOUND=1
-    PKG_AC_DEFINE_PUBLIC(HAVE_PCAP_PCAP_H, 1, [Description])
+    AC_DEFINE(HAVE_PCAP_PCAP_H, 1)
   fi
   if test x"$PCAPINCLUDESFOUND" = x""; then
     AC_MSG_RESULT([not found])
@@ -313,7 +307,7 @@ if test x"$PCAPLIB" != x""; then
       LIBS="${LIBS} -lpfring -lpcap"
       AC_MSG_RESULT(yes)
       PFRING_LIB_FOUND=1
-      PKG_AC_DEFINE_PUBLIC(PFRING_LIB_FOUND, 1, [Description])
+      AC_DEFINE(PFRING_LIB_FOUND, 1)
     else
       AC_MSG_RESULT(no)
     fi
@@ -334,7 +328,7 @@ if test x"$PCAPLIBFOUND" = x""; then
       LIBS="${LIBS} -lpfring -lpcap"
       AC_MSG_RESULT(yes)
       PFRING_LIB_FOUND=1
-      PKG_AC_DEFINE_PUBLIC(PFRING_LIB_FOUND, 1, [Description])
+      AC_DEFINE(PFRING_LIB_FOUND, 1)
     else
       AC_MSG_RESULT(no)
     fi
@@ -361,7 +355,7 @@ if test x"$PFRING_LIB_FOUND" = x""; then
     ERROR: missing pcap library. Refer to: http://www.tcpdump.org/
   ])])
 
-  AC_CHECK_LIB([pcap], [pcap_set_protocol], [ PKG_AC_DEFINE_PUBLIC(PCAP_SET_PROTOCOL, 1, [Description]) ], [])
+  AC_CHECK_LIB([pcap], [pcap_set_protocol], [ AC_DEFINE(PCAP_SET_PROTOCOL, 1) ], [])
 else
   AC_CHECK_LIB([numa], [numa_bind], [], [AC_MSG_ERROR([
     ERROR: missing libnuma. Requirement for building PF_RING.
@@ -374,7 +368,7 @@ else
   LIBS="${LIBS} -lrt -lnuma"
 fi
 
-AC_CHECK_LIB([pcap], [pcap_setdirection], [ PKG_AC_DEFINE_PUBLIC(PCAP_SET_DIRECTION, 1, [Description]) ], [])
+AC_CHECK_LIB([pcap], [pcap_setdirection], [ AC_DEFINE(PCAP_SET_DIRECTION, 1) ], [])
 
 dnl start: mysql handling
 AC_MSG_CHECKING(whether to enable MySQL support)
@@ -403,7 +397,7 @@ AC_ARG_ENABLE(mysql,
     USING_SQL="yes"
     USING_MYSQL="yes"
     PMACCT_CFLAGS="$PMACCT_CFLAGS $MYSQL_CFLAGS"
-    PKG_AC_DEFINE_PUBLIC(WITH_MYSQL, 1, [Description])
+    AC_DEFINE(WITH_MYSQL, 1)
     _save_LIBS="$LIBS"
     LIBS="$LIBS $MYSQL_LIBS"
     AC_CHECK_LIB([mysqlclient], [mysql_query])
@@ -444,7 +438,7 @@ AC_ARG_ENABLE(pgsql,
       USING_SQL="yes"
       USING_PGSQL="yes"
       PMACCT_CFLAGS="$PMACCT_CFLAGS $PGSQL_CFLAGS"
-      PKG_AC_DEFINE_PUBLIC(WITH_PGSQL, 1, [Description])
+      AC_DEFINE(WITH_PGSQL, 1)
       _save_LIBS="$LIBS"
       LIBS="$LIBS $PGSQL_LIBS"
       AC_CHECK_LIB([pq], [PQexec])
@@ -481,7 +475,7 @@ AC_ARG_ENABLE(sqlite3,
       USING_SQL="yes"
       USING_SQLITE3="yes"
       PMACCT_CFLAGS="$PMACCT_CFLAGS $SQLITE3_CFLAGS"
-      PKG_AC_DEFINE_PUBLIC(WITH_SQLITE3, 1, [Description])
+      AC_DEFINE(WITH_SQLITE3, 1)
       _save_LIBS="$LIBS"
       LIBS="$LIBS $SQLITE3_LIBS"
       AC_CHECK_LIB([sqlite3], [sqlite3_exec])
@@ -513,9 +507,9 @@ AC_ARG_ENABLE(rabbitmq,
     PKG_CHECK_MODULES([RABBITMQ], [librabbitmq >= 0.13.0], [
       PLUGINS="${PLUGINS} rabbitmq"
       USING_RABBITMQ="yes"
-      PKG_AC_DEFINE_PUBLIC(WITH_RABBITMQ, 1, [Description])
+      AC_DEFINE(WITH_RABBITMQ, 1)
       USING_RABBITMQ_13="yes"
-      PKG_AC_DEFINE_PUBLIC(WITH_RABBITMQ_13, 1, [Description])
+      AC_DEFINE(WITH_RABBITMQ_13, 1)
       PMACCT_CFLAGS="$PMACCT_CFLAGS $RABBITMQ_CFLAGS"
       _save_LIBS="$LIBS"
       LIBS="$LIBS $RABBITMQ_LIBS"
@@ -533,9 +527,9 @@ AC_ARG_ENABLE(rabbitmq,
       PKG_CHECK_MODULES([RABBITMQ], [librabbitmq >= 0.9.0], [
 	PLUGINS="${PLUGINS} rabbitmq"
 	USING_RABBITMQ="yes"
-	PKG_AC_DEFINE_PUBLIC(WITH_RABBITMQ, 1, [Description])
+	AC_DEFINE(WITH_RABBITMQ, 1)
 	USING_RABBITMQ_9="yes"
-	PKG_AC_DEFINE_PUBLIC(WITH_RABBITMQ_9, 1, [Description])
+	AC_DEFINE(WITH_RABBITMQ_9, 1)
 	PMACCT_CFLAGS="$PMACCT_CFLAGS $RABBITMQ_CFLAGS"
 	_save_LIBS="$LIBS"
 	LIBS="$LIBS $RABBITMQ_LIBS"
@@ -571,7 +565,7 @@ AC_ARG_ENABLE(zmq,
       SUPPORTS="${SUPPORTS} zmq"
       USING_ZMQ="yes"
       PMACCT_CFLAGS="$PMACCT_CFLAGS $ZMQ_CFLAGS"
-      PKG_AC_DEFINE_PUBLIC(WITH_ZMQ, 1, [Description])
+      AC_DEFINE(WITH_ZMQ, 1)
       _save_LIBS="$LIBS"
       LIBS="$LIBS $ZMQ_LIBS"
       AC_CHECK_LIB([zmq], [zmq_send])
@@ -605,7 +599,7 @@ AC_ARG_ENABLE(kafka,
       PLUGINS="${PLUGINS} kafka"
       USING_KAFKA="yes"
       PMACCT_CFLAGS="$PMACCT_CFLAGS $KAFKA_CFLAGS"
-      PKG_AC_DEFINE_PUBLIC(WITH_KAFKA, 1, [Description])
+      AC_DEFINE(WITH_KAFKA, 1)
       _save_LIBS="$LIBS"
       LIBS="$LIBS $KAFKA_LIBS"
       AC_CHECK_LIB([rdkafka], [rd_kafka_produce])
@@ -639,7 +633,7 @@ AC_ARG_ENABLE(redis,
       SUPPORTS="${SUPPORTS} redis"
       USING_REDIS="yes"
       PMACCT_CFLAGS="$PMACCT_CFLAGS $REDIS_CFLAGS"
-      PKG_AC_DEFINE_PUBLIC(WITH_REDIS, 1, [Description])
+      AC_DEFINE(WITH_REDIS, 1)
       _save_LIBS="$LIBS"
       LIBS="$LIBS $REDIS_LIBS"
       AC_CHECK_LIB([hiredis], [redisConnect])
@@ -671,7 +665,7 @@ AC_ARG_ENABLE(gnutls,
       SUPPORTS="${SUPPORTS} gnutls"
       USING_GNUTLS="yes"
       PMACCT_CFLAGS="$PMACCT_CFLAGS $GNUTLS_CFLAGS"
-      PKG_AC_DEFINE_PUBLIC(WITH_GNUTLS, 1, [Description])
+      AC_DEFINE(WITH_GNUTLS, 1)
       _save_LIBS="$LIBS"
       LIBS="$LIBS $GNUTLS_LIBS"
       AC_CHECK_LIB([gnutls], [gnutls_global_init])
@@ -702,7 +696,7 @@ AC_ARG_ENABLE(geoipv2,
       SUPPORTS="${SUPPORTS} geoipv2"
       USING_MMGEOIPV2="yes"
       PMACCT_CFLAGS="$PMACCT_CFLAGS $GEOIPV2_CFLAGS"
-      PKG_AC_DEFINE_PUBLIC(WITH_GEOIPV2, 1, [Description])
+      AC_DEFINE(WITH_GEOIPV2, 1)
       _save_LIBS="$LIBS"
       LIBS="$LIBS $GEOIPV2_LIBS"
       AC_CHECK_LIB([maxminddb], [MMDB_open])
@@ -737,7 +731,7 @@ AC_ARG_ENABLE(jansson,
       SUPPORTS="${SUPPORTS} jansson"
       USING_JANSSON="yes"
       PMACCT_CFLAGS="$PMACCT_CFLAGS $JANSSON_CFLAGS"
-      PKG_AC_DEFINE_PUBLIC(WITH_JANSSON, 1, [Description])
+      AC_DEFINE(WITH_JANSSON, 1)
       _save_LIBS="$LIBS"
       LIBS="$LIBS $JANSSON_LIBS"
       AC_CHECK_LIB([jansson], [json_object])
@@ -771,7 +765,7 @@ AC_ARG_ENABLE(avro,
       SUPPORTS="${SUPPORTS} avro"
       USING_AVRO="yes"
       PMACCT_CFLAGS="$PMACCT_CFLAGS $AVRO_CFLAGS"
-      PKG_AC_DEFINE_PUBLIC(WITH_AVRO, 1, [Description])
+      AC_DEFINE(WITH_AVRO, 1)
       _save_LIBS="$LIBS"
       LIBS="$LIBS $AVRO_LIBS"
       AC_CHECK_LIB([avro], [avro_record_get])
@@ -809,7 +803,7 @@ AC_ARG_ENABLE(serdes,
     USING_SERDES="yes"
     PMACCT_CFLAGS="$PMACCT_CFLAGS $SERDES_CFLAGS"
     SERDES_LIBS="$SERDES_LIBS -lserdes"
-    PKG_AC_DEFINE_PUBLIC(WITH_SERDES, 1, [Description])
+    AC_DEFINE(WITH_SERDES, 1)
     _save_LIBS="$LIBS"
     LIBS="$LIBS $SERDES_LIBS"
     AC_CHECK_LIB([serdes], [serdes_new],, AC_MSG_ERROR([Missing Confluent serdes library. Refer to: https://github.com/confluentinc/libserdes]))
@@ -866,7 +860,7 @@ AC_ARG_ENABLE(ndpi,
       fi
       PMACCT_CFLAGS="$PMACCT_CFLAGS $NDPI_CFLAGS $NDPI_CFLAGS_INST"
 
-      PKG_AC_DEFINE_PUBLIC(WITH_NDPI, 1, [Description])
+      AC_DEFINE(WITH_NDPI, 1)
       _save_LIBS="$LIBS"
       LIBS="$LIBS $NDPI_LIBS"
       AC_CHECK_LIB([ndpi], [ndpi_init_detection_module])
@@ -903,7 +897,7 @@ AC_ARG_ENABLE(unyte-udp-notif,
       USING_UNYTE_UDP_NOTIF="yes"
       PMACCT_CFLAGS="$PMACCT_CFLAGS $UNYTE_UDP_NOTIF_CFLAGS"
       UNYTE_UDP_NOTIF_LIBS="$UNYTE_UDP_NOTIF_LIBS -lunyte-udp-notif"
-      PKG_AC_DEFINE_PUBLIC(WITH_UNYTE_UDP_NOTIF, 1, [Description])
+      AC_DEFINE(WITH_UNYTE_UDP_NOTIF, 1)
       _save_LIBS="$LIBS"
       LIBS="$LIBS $UNYTE_UDP_NOTIF_LIBS -lpthread"
       AC_CHECK_LIB([unyte-udp-notif], [unyte_udp_start_collector], [], [AC_MSG_ERROR([
@@ -941,7 +935,7 @@ AC_ARG_ENABLE(grpc-collector,
       USING_GRPC_COLLECTOR="yes"
       PMACCT_CFLAGS="$PMACCT_CFLAGS $GRPC_COLLECTOR_CFLAGS"
       GRPC_COLLECTOR_LIBS="$GRPC_COLLECTOR_LIBS -lgrpc_collector -lpthread"
-      PKG_AC_DEFINE_PUBLIC(WITH_GRPC_COLLECTOR, 1, [Description])
+      AC_DEFINE(WITH_GRPC_COLLECTOR, 1)
       _save_LIBS="$LIBS"
       LIBS="$LIBS $GRPC_COLLECTOR_LIBS"
       LIBS="$_save_LIBS"
@@ -976,7 +970,7 @@ AC_ARG_ENABLE(ebpf,
     USING_EBPF="yes"
     PMACCT_CFLAGS="$PMACCT_CFLAGS $EBPF_CFLAGS"
     EBPF_LIBS="$EBPF_LIBS -lbpf"
-    PKG_AC_DEFINE_PUBLIC(WITH_EBPF, 1, [Description])
+    AC_DEFINE(WITH_EBPF, 1)
     _save_LIBS="$LIBS"
     LIBS="$LIBS $EBPF_LIBS"
     AC_CHECK_LIB([bpf], [bpf_object__open_file], [], [AC_MSG_ERROR([
@@ -999,7 +993,7 @@ AC_ARG_ENABLE(ebpf,
 dnl finish: ebpf handling
 
 if test x"$USING_DLOPEN" = x"yes"; then
-        PKG_AC_DEFINE_PUBLIC(HAVE_DLOPEN, 1, [Description])
+        AC_DEFINE(HAVE_DLOPEN, 1)
 else
         # Adding linking to libdl here 1) if required and 2) in case of --disable-so
         if test x"$USING_MYSQL" = x"yes" -o x"$USING_SQLITE3" = x"yes"; then
@@ -1024,14 +1018,14 @@ AC_CHECK_HEADERS([sys/select.h sys/socket.h sys/stat.h sys/time.h sys/types.h sy
 AC_CHECK_HEADERS([sys/wait.h time.h unistd.h])
 
 dnl Checks for typedefs, structures, and compiler characteristics.
-AC_CHECK_TYPE(u_int64_t, [PKG_AC_DEFINE_PUBLIC(HAVE_U_INT64_T, 1, [Description])])
-AC_CHECK_TYPE(u_int32_t, [PKG_AC_DEFINE_PUBLIC(HAVE_U_INT32_T, 1, [Description])])
-AC_CHECK_TYPE(u_int16_t, [PKG_AC_DEFINE_PUBLIC(HAVE_U_INT16_T, 1, [Description])])
-AC_CHECK_TYPE(u_int8_t, [PKG_AC_DEFINE_PUBLIC(HAVE_U_INT8_T, 1, [Description])])
-AC_CHECK_TYPE(uint64_t, [PKG_AC_DEFINE_PUBLIC(HAVE_UINT64_T, 1, [Description])])
-AC_CHECK_TYPE(uint32_t, [PKG_AC_DEFINE_PUBLIC(HAVE_UINT32_T, 1, [Description])])
-AC_CHECK_TYPE(uint16_t, [PKG_AC_DEFINE_PUBLIC(HAVE_UINT16_T, 1, [Description])])
-AC_CHECK_TYPE(uint8_t, [PKG_AC_DEFINE_PUBLIC(HAVE_UINT8_T, 1, [Description])])
+AC_CHECK_TYPE(u_int64_t, [AC_DEFINE(HAVE_U_INT64_T, 1)])
+AC_CHECK_TYPE(u_int32_t, [AC_DEFINE(HAVE_U_INT32_T, 1)])
+AC_CHECK_TYPE(u_int16_t, [AC_DEFINE(HAVE_U_INT16_T, 1)])
+AC_CHECK_TYPE(u_int8_t, [AC_DEFINE(HAVE_U_INT8_T, 1)])
+AC_CHECK_TYPE(uint64_t, [AC_DEFINE(HAVE_UINT64_T, 1)])
+AC_CHECK_TYPE(uint32_t, [AC_DEFINE(HAVE_UINT32_T, 1)])
+AC_CHECK_TYPE(uint16_t, [AC_DEFINE(HAVE_UINT16_T, 1)])
+AC_CHECK_TYPE(uint8_t, [AC_DEFINE(HAVE_UINT8_T, 1)])
 
 AC_MSG_CHECKING(whether to enable NFLOG support)
 AC_ARG_ENABLE(nflog,
@@ -1042,7 +1036,7 @@ AC_ARG_ENABLE(nflog,
     PKG_CHECK_MODULES([NFLOG], [libnetfilter_log >= 1], [
       SUPPORTS="${SUPPORTS} nflog"
       USING_NFLOG="yes"
-      PKG_AC_DEFINE_PUBLIC(WITH_NFLOG, 1, [Description])
+      AC_DEFINE(WITH_NFLOG, 1)
     ])
     ;;
   no)
@@ -1057,7 +1051,7 @@ AC_ARG_ENABLE(traffic-bins,
         [
           if test x$enableval = x"yes" ; then
             AC_MSG_RESULT(yes)
-            PKG_AC_DEFINE_PUBLIC(HAVE_TRAFFIC_BINS, 1, [Description])
+            AC_DEFINE(HAVE_TRAFFIC_BINS, 1)
             USING_TRAFFIC_BINS="yes"
           else
             AC_MSG_RESULT(no)
@@ -1065,7 +1059,7 @@ AC_ARG_ENABLE(traffic-bins,
         ],
         [
           AC_MSG_RESULT(yes)
-          PKG_AC_DEFINE_PUBLIC(HAVE_TRAFFIC_BINS, 1, [Description])
+          AC_DEFINE(HAVE_TRAFFIC_BINS, 1)
           USING_TRAFFIC_BINS="yes"
           COMPILE_ARGS="${COMPILE_ARGS} '--enable-traffic-bins'"
         ]
@@ -1077,7 +1071,7 @@ AC_ARG_ENABLE(bgp-bins,
         [
           if test x$enableval = x"yes" ; then
             AC_MSG_RESULT(yes)
-            PKG_AC_DEFINE_PUBLIC(HAVE_BGP_BINS, 1, [Description])
+            AC_DEFINE(HAVE_BGP_BINS, 1)
             USING_BGP_BINS="yes"
           else
             AC_MSG_RESULT(no)
@@ -1085,7 +1079,7 @@ AC_ARG_ENABLE(bgp-bins,
         ],
         [
           AC_MSG_RESULT(yes)
-          PKG_AC_DEFINE_PUBLIC(HAVE_BGP_BINS, 1, [Description])
+          AC_DEFINE(HAVE_BGP_BINS, 1)
           USING_BGP_BINS="yes"
           COMPILE_ARGS="${COMPILE_ARGS} '--enable-bgp-bins'"
         ]
@@ -1097,7 +1091,7 @@ AC_ARG_ENABLE(bmp-bins,
         [
           if test x$enableval = x"yes" ; then
             AC_MSG_RESULT(yes)
-            PKG_AC_DEFINE_PUBLIC(HAVE_BMP_BINS, 1, [Description])
+            AC_DEFINE(HAVE_BMP_BINS, 1)
             USING_BMP_BINS="yes"
           else
             AC_MSG_RESULT(no)
@@ -1105,7 +1099,7 @@ AC_ARG_ENABLE(bmp-bins,
         ],
         [
           AC_MSG_RESULT(yes)
-          PKG_AC_DEFINE_PUBLIC(HAVE_BMP_BINS, 1, [Description])
+          AC_DEFINE(HAVE_BMP_BINS, 1)
           USING_BMP_BINS="yes"
           COMPILE_ARGS="${COMPILE_ARGS} '--enable-bmp-bins'"
         ]
@@ -1117,7 +1111,7 @@ AC_ARG_ENABLE(st-bins,
         [
           if test x$enableval = x"yes" ; then
             AC_MSG_RESULT(yes)
-            PKG_AC_DEFINE_PUBLIC(HAVE_ST_BINS, 1, [Description])
+            AC_DEFINE(HAVE_ST_BINS, 1)
             USING_ST_BINS="yes"
           else
             AC_MSG_RESULT(no)
@@ -1125,7 +1119,7 @@ AC_ARG_ENABLE(st-bins,
         ],
         [
           AC_MSG_RESULT(yes)
-          PKG_AC_DEFINE_PUBLIC(HAVE_ST_BINS, 1, [Description])
+          AC_DEFINE(HAVE_ST_BINS, 1)
           USING_ST_BINS="yes"
           COMPILE_ARGS="${COMPILE_ARGS} '--enable-st-bins'"
         ]
@@ -1135,7 +1129,7 @@ AC_CHECK_FUNCS([setproctitle mallopt tdestroy strlcpy vfork])
 
 dnl Check for SO_BINDTODEVICE
 AC_CHECK_DECL([SO_BINDTODEVICE],
-        PKG_AC_DEFINE_PUBLIC(HAVE_SO_BINDTODEVICE, 1, [Check if kernel supports SO_BINDTODEVICE]),,
+        AC_DEFINE(HAVE_SO_BINDTODEVICE, 1, [Check if kernel supports SO_BINDTODEVICE]),,
                 [
                   #include <sys/socket.h>
                 ]
@@ -1143,7 +1137,7 @@ AC_CHECK_DECL([SO_BINDTODEVICE],
 
 dnl Check for SO_REUSEPORT & friends
 AC_CHECK_DECL([SO_REUSEPORT],
-        PKG_AC_DEFINE_PUBLIC(HAVE_SO_REUSEPORT, 1, [Check if kernel supports SO_REUSEPORT]),,
+        AC_DEFINE(HAVE_SO_REUSEPORT, 1, [Check if kernel supports SO_REUSEPORT]),,
                 [
                   #include <sys/types.h>
                   #include <sys/socket.h>
@@ -1151,7 +1145,7 @@ AC_CHECK_DECL([SO_REUSEPORT],
 )
 
 AC_CHECK_DECL([SO_ATTACH_REUSEPORT_EBPF],
-        PKG_AC_DEFINE_PUBLIC(HAVE_SO_ATTACH_REUSEPORT_EBPF, 1, [Check if kernel supports SO_ATTACH_REUSEPORT_EBPF]),,
+        AC_DEFINE(HAVE_SO_ATTACH_REUSEPORT_EBPF, 1, [Check if kernel supports SO_ATTACH_REUSEPORT_EBPF]),,
                 [
                   #include <sys/types.h>
                   #include <sys/socket.h>
@@ -1177,7 +1171,7 @@ AC_ARG_WITH(external-deps,
 if test x"$WITH_EXTERNAL_DEPS" = x"yes"; then
         dnl Compiled-in dependencies
         INCLUDES="-I${ac_pwd}/src/external_libs/rootfs/include ${INCLUDES} "
-        LDFLAGS="-L${ac_pwd}/src/external_libs/rootfs/lib -L/usr/local/lib ${LDFLAGS}"
+        LDFLAGS="-L${ac_pwd}/src/external_libs/rootfs/lib ${LDFLAGS}"
         AC_MSG_RESULT(yes)
 else
         AC_MSG_RESULT(no)
@@ -1229,7 +1223,7 @@ INCLUDES="${INCLUDES} -I$(pwd)/src"
 
 dnl final checks
 dnl trivial solution to portability issue
-AC_DEFINE_UNQUOTED(COMPILE_ARGS, "$COMPILE_ARGS", [Description])
+AC_DEFINE_UNQUOTED(COMPILE_ARGS, "$COMPILE_ARGS")
 CFLAGS="${CFLAGS} ${INCLUDES}"
 INCLUDES=""
 
@@ -1257,9 +1251,6 @@ https://github.com/pmacct/pmacct
 "
 
 AC_SUBST([PMACCT_CFLAGS])
-AC_SUBST([HAVE_TRAFFIC_BINS])
-AC_SUBST([WITH_KAFKA])
-WITH_KAFKA=1
 
 AM_CONDITIONAL([WITH_MYSQL], [test x"$USING_MYSQL" = x"yes"])
 AM_CONDITIONAL([WITH_PGSQL], [test x"$USING_PGSQL" = x"yes"])
@@ -1287,11 +1278,64 @@ AM_CONDITIONAL([USING_BGP_BINS], [test x"$USING_BGP_BINS" = x"yes"])
 AM_CONDITIONAL([USING_BMP_BINS], [test x"$USING_BMP_BINS" = x"yes"])
 AM_CONDITIONAL([USING_ST_BINS], [test x"$USING_ST_BINS" = x"yes"])
 
-A_PC_CFLAGS="$CFLAGS $PMACCT_CFLAGS"
-A_PC_LIBS="$LDFLAGS $LIBS"
+PMACCT_BUILD_DEFINES=""
+AS_IF([test x"$USING_MYSQL" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define WITH_MYSQL 1"])
+AS_IF([test x"$USING_PGSQL" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define WITH_PGSQL 1"])
+AS_IF([test x"$USING_SQLITE3" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define WITH_SQLITE3 1"])
+AS_IF([test x"$USING_RABBITMQ" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define WITH_RABBITMQ 1"])
+AS_IF([test x"$USING_RABBITMQ_9" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define WITH_RABBITMQ_9 1"])
+AS_IF([test x"$USING_RABBITMQ_13" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define WITH_RABBITMQ_13 1"])
+AS_IF([test x"$USING_ZMQ" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define WITH_ZMQ 1"])
+AS_IF([test x"$USING_KAFKA" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define WITH_KAFKA 1"])
+AS_IF([test x"$USING_REDIS" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define WITH_REDIS 1"])
+AS_IF([test x"$USING_GNUTLS" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define WITH_GNUTLS 1"])
+AS_IF([test x"$USING_JANSSON" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define WITH_JANSSON 1"])
+AS_IF([test x"$USING_AVRO" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define WITH_AVRO 1"])
+AS_IF([test x"$USING_SERDES" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define WITH_SERDES 1"])
+AS_IF([test x"$USING_NDPI" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define WITH_NDPI 1"])
+AS_IF([test x"$USING_MMGEOIPV2" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define WITH_GEOIPV2 1"])
+AS_IF([test x"$USING_UNYTE_UDP_NOTIF" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define WITH_UNYTE_UDP_NOTIF 1"])
+AS_IF([test x"$USING_GRPC_COLLECTOR" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define WITH_GRPC_COLLECTOR 1"])
+AS_IF([test x"$USING_EBPF" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define WITH_EBPF 1"])
+AS_IF([test x"$USING_NFLOG" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define WITH_NFLOG 1"])
+AS_IF([test x"$USING_DLOPEN" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define HAVE_DLOPEN 1"])
+AS_IF([test x"$USING_TRAFFIC_BINS" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define HAVE_TRAFFIC_BINS 1"])
+AS_IF([test x"$USING_BGP_BINS" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define HAVE_BGP_BINS 1"])
+AS_IF([test x"$USING_BMP_BINS" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define HAVE_BMP_BINS 1"])
+AS_IF([test x"$USING_ST_BINS" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define HAVE_ST_BINS 1"])
+AS_IF([test x"$USING_L2" = x"yes"], [PMACCT_BUILD_DEFINES="$PMACCT_BUILD_DEFINES
+#define HAVE_L2 1"])
+AC_SUBST([PMACCT_BUILD_DEFINES])
 
-AC_SUBST([A_PC_CFLAGS])
-AC_SUBST([A_PC_LIBS])
+PMACCT_PC_CFLAGS="-I${includedir}"
+PMACCT_PC_LIBS=""
+
+AC_SUBST([PMACCT_PC_CFLAGS])
+AC_SUBST([PMACCT_PC_LIBS])
 
 AC_CONFIG_FILES([
             src/pmacct-version.h Makefile \
@@ -1303,8 +1347,7 @@ AC_CONFIG_FILES([
 	    src/ndpi/Makefile src/filters/Makefile \
 	    examples/lg/Makefile src/ebpf/Makefile \
 	    examples/custom/Makefile \
-      pmacct.pc \
-      src/build_config.h
-      ])
+	    pmacct.pc \
+	    src/build_config.h ])
 
 AC_OUTPUT

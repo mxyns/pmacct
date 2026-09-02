@@ -7,8 +7,13 @@ EXTRA_DIST = include sql examples docs CONFIG-KEYS FAQS QUICKSTART UPGRADE
 if USING_SQL
 EXTRA_DIST += src/sql_common_m.c
 endif
+
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = pmacct.pc
+
+pmacctincludedir = $(includedir)/pmacct
+pmacctinclude_HEADERS = src/build_config.h
+
 pmacct_data_dir = $(datarootdir)/pmacct
 pmacct_libs_dir = $(libdir)/pmacct
 pmacct_docs_dir = $(pmacct_data_dir)/docs
