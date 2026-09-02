@@ -33,11 +33,7 @@ enum dynlib_result dynlib_load_and_resolve(const struct dynlib lib) {
 		return DL_Error;
 	}
 
-	int index = 0;
-	struct dynlib_fn* fn = NULL;
-	do {
-		fn = &lib.table[index];
-
+	for (struct dynlib_fn *fn = lib.table; fn->name; fn++) {
 		// just ignore symbols we do not have a target for
 		if (!fn->store)
 			continue;
@@ -52,8 +48,7 @@ enum dynlib_result dynlib_load_and_resolve(const struct dynlib lib) {
 
 		// store symbol found into target address
 		*fn->store = sym;
-		index++;
-	} while (fn->name);
+	}
 
 	return DL_Success;
 }
