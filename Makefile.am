@@ -14,6 +14,9 @@ pkgconfig_DATA = pmacct.pc
 pmacctincludedir = $(includedir)/pmacct
 pmacctinclude_HEADERS = src/build_config.h src/packet_processor/packet_processor.h
 
+pmacctdynlibincludedir = $(includedir)/pmacct/dynlib
+pmacctdynlibinclude_HEADERS = src/dynlib/dynamic_loading.h
+
 pmacct_data_dir = $(datarootdir)/pmacct
 pmacct_libs_dir = $(libdir)/pmacct
 pmacct_docs_dir = $(pmacct_data_dir)/docs

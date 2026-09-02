@@ -14,6 +14,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include "pmacct.h"
+#include "bgp/bgp.h"
+#include "bmp/bmp.h"
 #include "packet_processor.h"
 
 // Initialize default packet processor
