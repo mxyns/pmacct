@@ -54,8 +54,6 @@ ENV MAKEFLAGS="-j${NUM_WORKERS}"
 # Do not check certificates in wget for external deps
 ARG DEPS_DONT_CHECK_CERTIFICATE
 RUN ./ci/deps.sh
-
-
 # Actual build
 COPY . .
 RUN export AVRO_LIBS="-L/usr/local/avro/lib -lavro" && \
@@ -75,7 +73,6 @@ LABEL maintainer="pmacct Docker Doctors <docker-doctors (at) pmacct.net>"
 # We don't want man pages
 COPY ci/dpkg.cfg.d/excludes /etc/dpkg/dpkg.cfg.d/excludes
 COPY --from=build-stage /usr/local/ /usr/local
-
 # Runtime deps
 RUN apt-get update && \
   apt-get install -y \
@@ -93,5 +90,4 @@ RUN apt-get update && \
   apt-get -y clean && \
   rm -rf /var/lib/apt/lists/* && \
   ldconfig
-
 ENTRYPOINT ["/bin/bash"]
