@@ -21,30 +21,29 @@
 
 // Initialize default packet processor
 packet_processor_t pprocessor = {
-  bgp_parse_msg,
-  bmp_process_packet,
-  bmp_peer_init,
-  bmp_peer_close
+	bgp_parse_msg,
+	bmp_process_packet,
+	bmp_peer_init,
+	bmp_peer_close
 };
 
 enum dynlib_result packet_processor_dynload(const char* lib_path) {
-  packet_processor_t processor = {0};
-  const enum dynlib_result result = dynlib_load_and_resolve((struct dynlib){
-      .path = lib_path,
-      .table = (dynlib_table){
-        {"bgp_parse_msg_hook", (void**) &processor.bgp_parse_msg},
-        {"bmp_process_packet_hook", (void**) &processor.bmp_process_packet},
-        {"bmp_peer_init_hook", (void**) &processor.bmp_peer_init},
-        {"bmp_peer_close_hook", (void**) &processor.bmp_peer_close},
-        {NULL,NULL}
-      },
-    }
-  );
+	packet_processor_t processor = {0};
+	const enum dynlib_result result = dynlib_load_and_resolve((struct dynlib){
+		.path = lib_path,
+		.table = (dynlib_table){
+			{"bgp_parse_msg_hook", (void**) &processor.bgp_parse_msg},
+			{"bmp_process_packet_hook", (void**) &processor.bmp_process_packet},
+			{"bmp_peer_init_hook", (void**) &processor.bmp_peer_init},
+			{"bmp_peer_close_hook", (void**) &processor.bmp_peer_close},
+			{NULL,NULL}
+		},
+	});
 
-  // On dynlib success, actually set active packet processor to the loaded library
-  if (result == DL_Success) {
-    pprocessor = processor;
-  }
+	// On dynlib success, actually set active packet processor to the loaded library
+	if (result == DL_Success) {
+		pprocessor = processor;
+	}
 
-  return result;
+	return result;
 }

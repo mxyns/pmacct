@@ -21,40 +21,39 @@
 #include "dynlib/dynamic_loading.h"
 
 enum dynlib_result dynlib_load_and_resolve(const struct dynlib lib) {
+	if (!lib.path || !lib.table) {
+		return DL_Error;
+	}
 
-  if (!lib.path || !lib.table) {
-    return DL_Error;
-  }
+	void* handle = dlopen(lib.path, RTLD_NOW);
+	// load the dynamic library from name/path
+	if (!handle) {
+		Log(LOG_ERR, "ERROR ( %s ): [dynlib] Could not load provided library %s: %s\n", config.name, lib.path,
+		    dlerror());
+		return DL_Error;
+	}
 
-  void* handle = dlopen(lib.path, RTLD_NOW);
-  // load the dynamic library from name/path
-  if (!handle) {
-    Log(LOG_ERR, "ERROR ( %s ): [dynlib] Could not load provided library %s: %s\n", config.name, lib.path,
-        dlerror());
-    return DL_Error;
-  }
+	int index = 0;
+	struct dynlib_fn* fn = NULL;
+	do {
+		fn = &lib.table[index];
 
-  int index = 0;
-  struct dynlib_fn* fn = NULL;
-  do {
-    fn = &lib.table[index];
+		// just ignore symbols we do not have a target for
+		if (!fn->store)
+			continue;
 
-    // just ignore symbols we do not have a target for
-    if (!fn->store)
-      continue;
+		// lookup symbol by name
+		void* sym = dlsym(handle, fn->name);
+		if (!sym) {
+			Log(LOG_ERR, "ERROR ( %s ): [dynlib] expected symbol \"%s\" not found in dynamic library %s.\n", config.name, fn->name,
+			    lib.path);
+			return DL_Error;
+		}
 
-    // lookup symbol by name
-    void* sym = dlsym(handle, fn->name);
-    if (!sym) {
-      printf("ERROR ( %s ): [dynlib] expected symbol \"%s\" not found in dynamic library %s.\n", config.name, fn->name,
-             lib.path);
-      return DL_Error;
-    }
+		// store symbol found into target address
+		*fn->store = sym;
+		index++;
+	} while (fn->name);
 
-    // store symbol found into target address
-    *fn->store = sym;
-    index++;
-  } while (fn->name);
-
-  return DL_Success;
+	return DL_Success;
 }
