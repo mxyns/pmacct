@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 SCRIPT_DIR=$( cd -- "$( dirname -- "$0" )" &> /dev/null && pwd )
 PMACCT_ROOT_LOCATION="$SCRIPT_DIR/../../../"
 
