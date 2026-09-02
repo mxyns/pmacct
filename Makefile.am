@@ -12,7 +12,7 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = pmacct.pc
 
 pmacctincludedir = $(includedir)/pmacct
-pmacctinclude_HEADERS = src/build_config.h
+pmacctinclude_HEADERS = src/build_config.h src/packet_processor/packet_processor.h
 
 pmacct_data_dir = $(datarootdir)/pmacct
 pmacct_libs_dir = $(libdir)/pmacct
