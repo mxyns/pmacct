@@ -1,6 +1,6 @@
 /*
     pmacct (Promiscuous mode IP Accounting package)
-    pmacct is Copyright (C) 2003-2023 by Paolo Lucente
+    pmacct is Copyright (C) 2003-2026 by Paolo Lucente
 */
 
 /*
@@ -30,6 +30,10 @@ static const char hex[] = "0123456789abcdef";
  */
 unsigned int str_to_addr(const char *str, struct host_addr *a)
 {
+  if (!str || !a) return FALSE;
+
+  memset(a, 0, sizeof(*a));
+
   if (inet_aton(str, &a->address.ipv4)) {
     a->family = AF_INET;
     return a->family;
@@ -138,6 +142,7 @@ unsigned int addr_mask_to_str(char *str, int len, const struct host_addr *a, con
 unsigned int apply_addr_mask(struct host_addr *a, struct host_mask *m)
 {
   int j, ret = FALSE;
+  unsigned int remaining;
 
   if (a->family != m->family) {
     return FALSE;
@@ -158,15 +163,22 @@ unsigned int apply_addr_mask(struct host_addr *a, struct host_mask *m)
       return FALSE;
     }
 
-    for (j = 0; j < 16 && m->len >= 8; j++, m->len -= 8) {
-      m->mask.m6[j] = 0xffU;
+    /* Do not modify m->len: callers may reuse the mask.  Also keep the
+       mask bytes in host-independent order; s6_addr is a byte array. */
+    memset(m->mask.m6, 0, sizeof(m->mask.m6));
+    remaining = m->len;
+
+    for (j = 0; j < 16 && remaining >= 8; j++, remaining -= 8) {
+      m->mask.m6[j] = 0xff;
     }
 
-    if (j < 16 && m->len) {
-      m->mask.m6[j] = htonl(~(0xffU >> m->len));
+    if (j < 16 && remaining) {
+      m->mask.m6[j] = (u_int8_t)(0xffU << (8 - remaining));
     }
 
-    for (j = 0; j < 16; j++) a->address.ipv6.s6_addr[j] &= m->mask.m6[j];
+    for (j = 0; j < 16; j++) {
+      a->address.ipv6.s6_addr[j] &= m->mask.m6[j];
+    }
 
     ret = a->family;
   }
