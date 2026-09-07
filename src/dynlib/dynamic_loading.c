@@ -26,14 +26,13 @@ enum dynlib_result dynlib_load_and_resolve(const struct dynlib lib) {
 	}
 
 	void* handle = dlopen(lib.path, RTLD_NOW);
-	// load the dynamic library from name/path
 	if (!handle) {
 		Log(LOG_ERR, "ERROR ( %s ): [dynlib] Could not load provided library %s: %s\n", config.name, lib.path,
 		    dlerror());
 		return DL_Error;
 	}
 
-	for (struct dynlib_fn *fn = lib.table; fn->name; fn++) {
+	for (const struct dynlib_fn *fn = lib.table; fn->name; fn++) {
 		// just ignore symbols we do not have a target for
 		if (!fn->store)
 			continue;
